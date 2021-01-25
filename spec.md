@@ -3,25 +3,25 @@
 # Types
 
 ```
-SQA TYPE // js equivalent
+SQA TYPE // go equivalent
 ```
 
 ## Primative types
 
 ```
-INTEGER     // Number
-REAL        // Number
-BOOLEAN     // Boolean
-CHARACTER   // String
+INTEGER     // int64
+REAL        // float64
+BOOLEAN     // bool
+CHARACTER   // rune
 ```
 
 ## Complex types
 
 ```
-ARRAY       // Array
-STRING      // String
-RECORD      // class
-CLASS       // class
+ARRAY       // []type
+STRING      // string
+RECORD      // struct
+CLASS       // struct with associated methods/functions
 ```
 
 # Variable declarations
@@ -96,7 +96,7 @@ SET myArr TO [ 1, 2 ]
 -    // subtract : -
 *    // multiple : *
 /    // divide : /
-^    // exponent : **
+^    // exponent : math.pow
 ```
 
 ##### In addition, INTEGER has:
@@ -118,14 +118,14 @@ MOD  // modulo : %
 ### ARRAY
 
 ```
-&    // concatenate : Array.concat
+&    // concatenate : append(arr1[:], arr2[:]) - must be assigned to new variable with type inferred (:=)
 ```
 
 ## Comparison
 
 ```
-=    // equality : ===
-≠    // inequality : !==
+=    // equality : ==
+≠    // inequality : !=
 <    // less than : <
 ≤    // less than or equal to : <=
 >    // greater than : >
@@ -140,7 +140,7 @@ OR     // disjunction : ||
 NOT    // negation : !
 ```
 
-**NOTE: Expressions may be brackted by (...)**
+**NOTE: Expressions may be bracketed by (...)**
 
 ## Precedence
 
@@ -160,6 +160,6 @@ Where operators are of the same precedence, they are evaluated left-to-right.
 # System Entities
 
 ```
-DISPLAY       // console.log / stdout
-KEYBOARD      // stdin
+DISPLAY       // outputs data to stdout : fmt.Println / fmt.Printf
+KEYBOARD      // reads input from user/stdin : fmt.Scanf
 ```
