@@ -308,3 +308,41 @@ FOR EACH word FROM myArray DO
     SET sentence TO sentence & word & " "
 END FOR EACH
 ```
+
+# Subprograms
+
+## Procedure (No return value)
+
+```
+PROCEDURE id(...)
+    command(s)
+END PROCEDURE
+```
+
+## Function (always returns a value)
+
+```
+Function id(...) RETURNS type
+    command(s)
+    RETURN expression
+END FUNCTION
+```
+
+**Note: expression must be same as defined return type**
+
+**Note: RETURN expression may be used anywhere inside the function, one or more times, and when executed causes:**
+
+- the expression to be evaluated
+- the execution of the function to be terminated
+- the result of the expression to be returned as the result of calling the function
+
+## Parameters
+
+In the above definitions ... is a comma separated list of arguments/parameters,
+possibly empty. Formal parameters are preceded by their types:
+
+```
+PROCEDURE id(type id, type id, ...)
+// or
+FUNCTION id(type id, type id, ...) RETURNS type
+```
