@@ -346,3 +346,7 @@ PROCEDURE id(type id, type id, ...)
 // or
 FUNCTION id(type id, type id, ...) RETURNS type
 ```
+
+# Scope
+
+As the final code is transpiled to golang, variable scoping follows the same rules as go does. These rules can be found [here](https://www.geeksforgeeks.org/scope-of-variables-in-go/)
