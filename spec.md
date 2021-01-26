@@ -350,3 +350,16 @@ FUNCTION id(type id, type id, ...) RETURNS type
 # Scope
 
 As the final code is transpiled to golang, variable scoping follows the same rules as go does. These rules can be found [here](https://www.geeksforgeeks.org/scope-of-variables-in-go/)
+
+# Comments
+
+These operate in the same way as in most other languages, with an initial
+comment character (in this case #), followed by text up to the end of the line.
+Comments are ignored by the transpiler and thus have no effect on the resulting output of the program, they should be used to clarify, query or explain to a human read the purpose of nearby code.
+
+```
+# This is a comment
+# This is also a comment
+```
+
+**Note: Unlike in other langauges the SQA reference language does not include any character or character combination to create multi-line comments.**
