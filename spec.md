@@ -353,9 +353,7 @@ As the final code is transpiled to golang, variable scoping follows the same rul
 
 # Comments
 
-These operate in the same way as in most other languages, with an initial
-comment character (in this case #), followed by text up to the end of the line.
-Comments are ignored by the transpiler and thus have no effect on the resulting output of the program, they should be used to clarify, query or explain to a human read the purpose of nearby code.
+These operate in the same way as in most other languages, with an initial comment character (in this case #), followed by text up to the end of the line. Comments are ignored by the transpiler and thus have no effect on the resulting output of the program, they should be used to clarify, query or explain to a human read the purpose of nearby code.
 
 ```
 # This is a comment
@@ -363,3 +361,41 @@ Comments are ignored by the transpiler and thus have no effect on the resulting 
 ```
 
 **Note: Unlike in other langauges the SQA reference language does not include any character or character combination to create multi-line comments.**
+
+# File Handling
+
+Similar to python the keywords OPEN, CLOSE AND CREATE can be used to perform simple file handling.
+
+When working with files that have already been created, they must be opened
+and closed, for example:
+
+```
+OPEN "myNumbers.txt"
+CLOSE "myNumbers.txt"
+```
+
+When a file does not exist for output, it can be created using:
+
+```
+CREATE "myUpdatedNumbers.txt"
+```
+
+**Note: when a relative path is used it is found relative to the directory the source code is executed**
+
+## Example
+
+The following is a complete sequence opening and reading two lines from one file and creating and writing the lines to a second file, and finally closing both files:
+
+```
+DECLARE numbersData INITIALLY "myNumbers.txt"              // set file path to variable
+OPEN numbersData                                           // opens myNumbers.txt
+DECLARE data AS STRING INITIALLY FROM numbersData          // reads text from line 1 of myNumbers.txt and places it in data
+
+CREATE "outputFile.txt"                                    // creates the file outputFile.txt
+SEND data TO "outputFile.txt"                              // writes the value of data to line 1 of outputFile.txt
+RECEIVE data FROM numbersData                              // reads text from line 2 of myNumbers.txt and places it in data
+SEND data TO "outputFile.txt"                              // writes value of data to the line 2 of outputFile.txt
+
+CLOSE "outputFile.txt"                                     // closes files
+CLOSE numbersData
+```
