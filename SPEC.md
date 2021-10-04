@@ -5,15 +5,35 @@
 SQAlang's syntactical grammar defined in EBNF format.
 
 ```
-expression     → equality ;
-equality       → comparison ( ( "≠" | "=" ) comparison )* ;
-comparison     → term ( ( ">" | "≥" | "<" | "≤" ) term )* ;
-term           → factor ( ( "-" | "+" ) factor )* ;
-factor         → unary ( ( "/" | "*" ) unary )* ;
-unary          → "-" unary
-               | primary ;
-primary        → NUMBER | STRING | "true" | "false" | "EMPTY"
-               | "(" expression ")" ;
+program          → declaration* eof ;
+
+declaration      → classDecl
+                 | subDecl
+                 | command ;
+
+command          → varDecl
+                 | statement ;
+
+classDecl        → "CLASS" IDENTIFIER ( ( "IS" "{" parameters "}" )? | "INHERITS" IDENTIFIER ( "WITH" "{" parameters "}" )? ) classMethods? "END" "CLASS"
+classMethods     → "METHODS" classConstructor? classMethod*
+classConstructor → "CONSTRUCTOR" "(" parameters? ")" command* "END" "CONSTRUCTOR"
+classMethod      → "OVERRIDE"? subDecl
+
+subDecl          → procDecl | funDecl
+sub              → IDENTIFIER "(" parameters? ")"
+procDecl         → "PROCEDURE" sub command* "END" "PROCEDURE"
+funDecl          → "FUNCTION" sub "RETURNS" type command* "END" "FUNCTION"
+parameters       → type IDENTIFIER ("," type IDENTIFIER)*
+
+expression       → equality ;
+equality         → comparison ( ( "≠" | "=" ) comparison )* ;
+comparison       → term ( ( ">" | "≥" | "<" | "≤" ) term )* ;
+term             → factor ( ( "-" | "+" ) factor )* ;
+factor           → unary ( ( "/" | "*" ) unary )* ;
+unary            → "-" unary
+                 | primary ;
+primary          → NUMBER | STRING | "true" | "false" | "EMPTY"
+                 | "(" expression ")" ;
 ```
 
 # Types
