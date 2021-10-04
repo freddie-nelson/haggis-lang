@@ -1,26 +1,42 @@
 # SQALang Language Specification
 
-# Types
+# Grammar
+
+SQAlang's syntactical grammar defined in EBNF format.
 
 ```
-SQA TYPE
+expression     → equality ;
+equality       → comparison ( ( "≠" | "=" ) comparison )* ;
+comparison     → term ( ( ">" | "≥" | "<" | "≤" ) term )* ;
+term           → factor ( ( "-" | "+" ) factor )* ;
+factor         → unary ( ( "/" | "*" ) unary )* ;
+unary          → "-" unary
+               | primary ;
+primary        → NUMBER | STRING | "true" | "false" | "EMPTY"
+               | "(" expression ")" ;
 ```
+
+# Types
 
 ## Primative types
 
 ```
-INTEGER     # int64
-REAL        # float64
-BOOLEAN     # bool
-CHARACTER   # rune
+INTEGER     # 64 bit signed integer
+REAL        # 64 bit signed floating point number
+BOOLEAN     # boolean (true/false)
+CHARACTER   # 8 bit unsigned integer
 ```
 
 ## Complex types
 
 ```
-ARRAY       # [length]type
-STRING      # string
+ARRAY       # list of elements of one type with set length
+STRING      # string of CHARACTER
 ```
+
+## Null type
+
+Any type of variable can also take or be compared to the value `EMPTY` which is equivalent to other languages `null` or `nil` values.
 
 # Variable declarations
 
@@ -431,13 +447,11 @@ Records can contain any amount of fields with arbritrary data type. Once a recor
 RECORD Person IS { STRING name, INTEGER, age }
 
 DECLARE john AS Person                                   # creates empty record of type Person
-DECLARE jane AS Person( "Jane Doe", 23 )                 # creates record with inital values
-DECLARE stranger INITIALLY { name = "Fred", age = 42 }   # creates a record type inline
+DECLARE jane AS Person("Jane Doe", 23)                   # creates record with inital values
 
 # accessing fields
-john.name            # returns ""
-jane.name            # returns "Jane Doe"
-stranger.age         # returns 42
+john.name            # ""
+jane.name            # "Jane Doe"
 ```
 
 ## Classes
