@@ -1,0 +1,104 @@
+program = globalDeclaration* EOF ;
+
+
+
+# --------------- Declarations --------------- 
+globalDeclaration = recordDecl 
+                  | classDecl
+                  | subDecl
+                  | declaration ;
+
+recordDecl        = "RECORD" IDENTIFER ( "IS" "{" parameters "}" ) ;
+
+classDecl         = "CLASS" IDENTIFER ( ( "INHERITS" IDENTIFER ( "WITH" "{" parameters "}" )? ) | ( "IS" "{" parameters "}" ) )?
+                    ( "METHODS" ( classConstructor | "OVERRIDE"? subDecl )* )?
+                    "END" "CLASS" ;
+classConstructor  = "CONSTRUCTOR" procedure "END" "CONSTRUCTOR" ;
+
+subDecl           = procDecl | funcDecl ;
+procDecl          = "PROCEDURE" procedure "END" "PROCEDURE" ;
+funcDecl          = "FUNCTION" function "END" "FUNCTION" ;
+
+declaration       = varDecl | statement ;
+varDecl           = "DECLARE" IDENTIFER ( "AS" TYPE_DECL )? ( "INITIALLY" ( ( "FROM" SYS_ENTITY ) | expression ) )? SEPERATOR ;
+
+# --------------- Statements --------------- 
+
+statement   = exprStmt ;
+
+ifStmt      = "IF" expression "THEN" declaration* ( "ELSE" declaration* )? "END" "IF" ;
+
+whileStmt   = "WHILE" expression "DO" declaration* "END" "WHILE" ;
+untilStmt   = "REPEAT" declaration* "UNTIL" expression SEPERATOR ;
+
+forStmt     = "FOR" IDENTIFER "FROM" expression "TO" expression ( "STEP" expression ) "DO" declaration* "END" "FOR" ;
+forEachStmt = "FOR EACH" IDENTIFER "FROM" expression "DO" declaration* "END" "FOR EACH" ;
+
+setStmt     = "SET" expression "TO" expression SEPERATOR ;
+
+createStmt  = "CREATE" FILE SEPERATOR ;
+openStmt    = "OPEN" FILE SEPERATOR ;
+closeStmt   = "CLOSE" FILE SEPERATOR ;
+
+sendStmt    = "SEND" expression "TO" SYS_ENTITY ;
+recieveStmt = "RECIEVE" expression "FROM" SYS_ENTITY ;
+
+returnStmt  = "RETURN" expression? SEPERATOR;
+
+exprStmt    = expression SEPERATOR ;
+
+# --------------- Expressions --------------- 
+expression    = logic_or ;
+
+logic_or      = logic_and ( "OR" logic_and )* ;
+logic_and     = logic_not ( "AND" logic_not )* ;
+logic_not     = equality ( "NOT" equality )* ;
+equality      = comparison ( ( "≠" | "=" ) comparison )* ;
+comparison    = concatenation ( ( ">" | "≥" | "<" | "≤" ) concatenation )* ;
+concatenation = term ( ( "&" ) term )* ;
+term          = factor ( ( "-" | "+" ) factor )* ;
+factor        = exponent ( ( "/" | "*" | "MOD" ) exponent )* ;
+exponent      = unary ( ( "^" ) unary )* ;
+
+unary         = ( "-" ) unary | call ;
+call          = primary ( "(" arguments? ")" | "." IDENTIFIER | "[" expression "]" )* ;
+primary       = TYPE | IDENTIFIER
+              | "(" expression ")"
+              | "THIS" ;
+
+
+# --------------- Types --------------- 
+TYPE       = INTEGER | REAL | CHARACTER | STRING | ARRAY ;
+
+INTEGER    = DIGIT+ ; 
+REAL       = DIGIT+ ( "." DIGIT+ ) ;
+CHARACTER  = "'" <any char except "'"> "'" ;
+STRING     = "\"" <any char except "\"">* "\"" ;
+ARRAY      = "[" arguments? "]" ( "*" INTEGER )? ;
+
+IDENTIFER  = ALPHA ( ALPHA | DIGIT )* ; 
+SYS_ENTITY = "DISPLAY" | "KEYBOARD" | FILE ; 
+FILE       = <file path or URL> ;
+
+ALPHA      = "a" ... "z" | "A" ... "Z" | "_" ;
+DIGIT      = "0" ... "9" ;
+
+
+# --------------- Type Declarations --------------- 
+TYPE_DECL    = INTEGER_TYPE | REAL_TYPE | CHARACTER_TYPE | STRING_TYPE | ARRAY_TYPE ;
+
+INTEGER_TYPE = "INTEGER" ;
+REAL_TYPE    = "REAL" ;
+STRING_TYPE  = "CHARACTER" ;
+STRING_TYPE  = "STRING" ;
+ARRAY_TYPE   = "ARRAY OF" TYPE_DECL+ ;
+
+
+# --------------- Utility Rules --------------- 
+procedure  = IDENTIFER "(" parameters ")" declaration* ;
+function   = IDENTIFER "(" parameters ")" "AS" TYPE_DECL declaration* ;
+
+parameters = TYPE_DECL IDENTIFIER ( "," TYPE_DECL IDENTIFIER )* ;
+arguments  = expression ( "," expression)* ;
+
+SEPERATOR  = ( ";" | "\n" ) ;

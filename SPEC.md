@@ -2,43 +2,11 @@
 
 # Grammar
 
-SQAlang's syntactical grammar defined in EBNF format.
-
-```
-program          → declaration* eof ;
-
-declaration      → classDecl
-                 | subDecl
-                 | command ;
-
-command          → varDecl
-                 | statement ;
-
-classDecl        → "CLASS" IDENTIFIER ( ( "IS" "{" parameters "}" )? | "INHERITS" IDENTIFIER ( "WITH" "{" parameters "}" )? ) classMethods? "END" "CLASS"
-classMethods     → "METHODS" classConstructor? classMethod*
-classConstructor → "CONSTRUCTOR" "(" parameters? ")" command* "END" "CONSTRUCTOR"
-classMethod      → "OVERRIDE"? subDecl
-
-subDecl          → procDecl | funDecl
-sub              → IDENTIFIER "(" parameters? ")"
-procDecl         → "PROCEDURE" sub command* "END" "PROCEDURE"
-funDecl          → "FUNCTION" sub "RETURNS" type command* "END" "FUNCTION"
-parameters       → type IDENTIFIER ("," type IDENTIFIER)*
-
-expression       → equality ;
-equality         → comparison ( ( "≠" | "=" ) comparison )* ;
-comparison       → term ( ( ">" | "≥" | "<" | "≤" ) term )* ;
-term             → factor ( ( "-" | "+" ) factor )* ;
-factor           → unary ( ( "/" | "*" ) unary )* ;
-unary            → "-" unary
-                 | primary ;
-primary          → NUMBER | STRING | "true" | "false" | "EMPTY"
-                 | "(" expression ")" ;
-```
+Check grammar.bnf file.
 
 # Types
 
-## Primative types
+## Primitive types
 
 ```
 INTEGER     # 64 bit signed integer
@@ -70,24 +38,24 @@ Examples of valid identifiers are:
 - My_Value
 - counter2
 
-## Primatives
+## Primitives
 
 ```
 DECLARE foo AS STRING                         # explicit type declaration
-DECLARE bar INITIALLY 10                      # implicit type declaration using inital value
+DECLARE bar INITIALLY 10                      # implicit type declaration using initial value
 DECLARE foobar AS REAL INITIALLY 1.2          # explicit type and initial value
 ```
 
 ## Arrays
 
 ```
-DECLARE myArr AS ARRAY OF INTEGER INITIALLY [] * 9                   # declare array of type explicit with length of 9
+DECLARE myArr AS ARRAY OF INTEGER INITIALLY [] * 9                  # declare array of type explicit with length of 9
 DECLARE myArrImplicit INITIALLY [ 1, 2 ]                            # declare array of type implicitly with length of 2
 DECLARE grid AS ARRAY OF ARRAY OF INTEGER INITIALLY [] * 4 * 3      # declare 2D array with length 4 and inner arrays with length 3
 
 SET myArr[0] TO 10           # sets the first element in the array to 10
 SET grid[0][0] TO 13         # sets the first element's first element to 13
-SET myArr TO [1] * 9       # sets my array to an array of length 9 with each element set to 1
+SET myArr TO [1] * 9         # sets myArr to an array of length 9 with each element set to 1
                              # * can be used in place of repeated concatenation
 ```
 
@@ -281,7 +249,7 @@ FOR i FROM expr TO expr STEP expr DO command END FOR
 
 # For Each loop
 FOR EACH element FROM expression DO command END FOR EACH          # expression must be ARRAY or STRING
-                                                             # order of value extraction is first to last
+                                                                  # order of value extraction is first to last
 ```
 
 ### Examples
@@ -324,7 +292,7 @@ END FOR EACH
 
 # Subprograms
 
-Procedures and Functions in SQAL are not first class citizens, this means they cannot be assigned to variables or passed as paramters to functions.
+Procedures and Functions in haggis are not first class citizens, this means they cannot be assigned to variables or passed as parameters to functions.
 
 For example the following code would not work:
 
