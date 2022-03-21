@@ -20,7 +20,7 @@ procDecl          = "PROCEDURE" procedure "END" "PROCEDURE" ;
 funcDecl          = "FUNCTION" function "END" "FUNCTION" ;
 
 declaration       = varDecl | statement ;
-varDecl           = "DECLARE" IDENTIFER ( "AS" TYPE_DECL )? ( "INITIALLY" ( ( "FROM" SYS_ENTITY ) | expression ) )? SEPERATOR ;
+varDecl           = "DECLARE" IDENTIFER ( "AS" TYPE_DECL )? "INITIALLY" ( ( "FROM" SYS_ENTITY ) | expression ) SEPERATOR ;
 
 # --------------- Statements --------------- 
 
@@ -68,13 +68,14 @@ primary       = TYPE | IDENTIFIER
 
 
 # --------------- Types --------------- 
-TYPE       = INTEGER | REAL | CHARACTER | STRING | ARRAY ;
+TYPE       = INTEGER | REAL | CHARACTER | STRING | ARRAY | RECORD ;
 
 INTEGER    = DIGIT+ ; 
 REAL       = DIGIT+ ( "." DIGIT+ ) ;
 CHARACTER  = "'" <any char except "'"> "'" ;
 STRING     = "\"" <any char except "\"">* "\"" ;
 ARRAY      = "[" arguments? "]" ( "*" INTEGER )? ;
+RECORD     = "{" IDENTIFER "=" expression ( "," IDENTIFER "=" expression)* "}" ; # RECORD expression
 
 IDENTIFER  = ALPHA ( ALPHA | DIGIT )* ; 
 SYS_ENTITY = "DISPLAY" | "KEYBOARD" | FILE ; 
