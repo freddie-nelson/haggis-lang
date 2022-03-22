@@ -24,15 +24,22 @@ varDecl           = "DECLARE" IDENTIFER ( "AS" TYPE_DECL )? "INITIALLY" ( ( "FRO
 
 # --------------- Statements --------------- 
 
-statement   = exprStmt ;
+statement   = ifStmt
+            | whileStmt | untilStmt
+            | forStmt | forEachStmt 
+            | setStmt 
+            | createStmt | openStmt | closeStmt
+            | sendStmt | recieveStmt 
+            | returnStmt
+            | exprStmt ;
 
-ifStmt      = "IF" expression "THEN" declaration* ( "ELSE" declaration* )? "END" "IF" ;
+ifStmt      = "IF" expression "THEN" declaration* ( "ELSE" declaration* )? "END" "IF" SEPERATOR? ;
 
-whileStmt   = "WHILE" expression "DO" declaration* "END" "WHILE" ;
+whileStmt   = "WHILE" expression "DO" declaration* "END" "WHILE" SEPERATOR? ;
 untilStmt   = "REPEAT" declaration* "UNTIL" expression SEPERATOR ;
 
-forStmt     = "FOR" IDENTIFER "FROM" expression "TO" expression ( "STEP" expression ) "DO" declaration* "END" "FOR" ;
-forEachStmt = "FOR EACH" IDENTIFER "FROM" expression "DO" declaration* "END" "FOR EACH" ;
+forStmt     = "FOR" IDENTIFER "FROM" expression "TO" expression ( "STEP" expression ) "DO" declaration* "END" "FOR" SEPERATOR? ;
+forEachStmt = "FOR EACH" IDENTIFER "FROM" expression "DO" declaration* "END" "FOR EACH" SEPERATOR? ;
 
 setStmt     = "SET" expression "TO" expression SEPERATOR ;
 
@@ -40,8 +47,8 @@ createStmt  = "CREATE" FILE SEPERATOR ;
 openStmt    = "OPEN" FILE SEPERATOR ;
 closeStmt   = "CLOSE" FILE SEPERATOR ;
 
-sendStmt    = "SEND" expression "TO" SYS_ENTITY ;
-recieveStmt = "RECIEVE" expression "FROM" SYS_ENTITY ;
+sendStmt    = "SEND" expression "TO" SYS_ENTITY SEPERATOR ;
+recieveStmt = "RECIEVE" expression "FROM" SYS_ENTITY SEPERATOR ;
 
 returnStmt  = "RETURN" expression? SEPERATOR;
 
