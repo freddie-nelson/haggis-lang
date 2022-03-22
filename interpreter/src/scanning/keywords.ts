@@ -9,6 +9,8 @@ const keywords: { [index: string]: TokenType } = {
   KEYBOARD: TokenType.KEYBOARD,
   true: TokenType.TRUE,
   false: TokenType.FALSE,
+  THIS: TokenType.THIS,
+  SUPER: TokenType.SUPER,
   RECORD: TokenType.RECORD,
   IS: TokenType.IS,
   CLASS: TokenType.CLASS,

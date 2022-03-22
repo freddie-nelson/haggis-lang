@@ -2,7 +2,7 @@ export enum Type {
   INTEGER,
   REAL,
   CHARACTER,
-  BOOOLEAN,
+  BOOLEAN,
 
   STRING,
   ARRAY,

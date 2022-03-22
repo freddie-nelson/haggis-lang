@@ -51,6 +51,10 @@ export enum TokenType {
   // keywords
   TRUE,
   FALSE,
+
+  THIS,
+  SUPER,
+
   RECORD,
   IS,
   CLASS,

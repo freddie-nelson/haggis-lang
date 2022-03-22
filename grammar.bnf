@@ -59,7 +59,7 @@ expression    = logic_or ;
 
 logic_or      = logic_and ( "OR" logic_and )* ;
 logic_and     = logic_not ( "AND" logic_not )* ;
-logic_not     = equality ( "NOT" equality )* ;
+logic_not     = ( "NOT" ) logic_not | equality ;
 equality      = comparison ( ( "≠" | "=" ) comparison )* ;
 comparison    = concatenation ( ( ">" | "≥" | "<" | "≤" ) concatenation )* ;
 concatenation = term ( ( "&" ) term )* ;

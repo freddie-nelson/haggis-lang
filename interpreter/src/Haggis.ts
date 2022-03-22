@@ -1,5 +1,6 @@
 import { readFileSync } from "fs";
 import { createInterface } from "readline";
+import Parser from "./parser/Parser";
 import RuntimeError from "./runtime/RuntimeError";
 import Scanner from "./scanning/Scanner";
 import Token from "./scanning/Token";
@@ -67,10 +68,10 @@ export default class Haggis {
     const scanner = new Scanner(source);
     const tokens: Token[] = scanner.scanTokens();
 
-    console.log(tokens);
+    const parser = new Parser(tokens);
+    const statements = parser.parse();
 
-    // const parser = new Parser(tokens);
-    // const statements = parser.parse();
+    console.log(statements);
 
     // stop if there was a syntax error
     if (this.hadError) return;
