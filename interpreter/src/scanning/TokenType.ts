@@ -49,6 +49,8 @@ export enum TokenType {
   KEYBOARD,
 
   // keywords
+  TRUE,
+  FALSE,
   RECORD,
   IS,
   CLASS,

@@ -8,7 +8,7 @@ globalDeclaration = recordDecl
                   | subDecl
                   | declaration ;
 
-recordDecl        = "RECORD" IDENTIFER ( "IS" "{" parameters "}" ) ;
+recordDecl        = "RECORD" IDENTIFER "IS" "{" parameters "}" ;
 
 classDecl         = "CLASS" IDENTIFER ( ( "INHERITS" IDENTIFER ( "WITH" "{" parameters "}" )? ) | ( "IS" "{" parameters "}" ) )?
                     ( "METHODS" ( classConstructor | "OVERRIDE"? subDecl )* )?
@@ -39,7 +39,7 @@ whileStmt   = "WHILE" expression "DO" declaration* "END" "WHILE" SEPERATOR? ;
 untilStmt   = "REPEAT" declaration* "UNTIL" expression SEPERATOR ;
 
 forStmt     = "FOR" IDENTIFER "FROM" expression "TO" expression ( "STEP" expression ) "DO" declaration* "END" "FOR" SEPERATOR? ;
-forEachStmt = "FOR EACH" IDENTIFER "FROM" expression "DO" declaration* "END" "FOR EACH" SEPERATOR? ;
+forEachStmt = "FOR" "EACH" IDENTIFER "FROM" expression "DO" declaration* "END" "FOR" "EACH" SEPERATOR? ;
 
 setStmt     = "SET" expression "TO" expression SEPERATOR ;
 
@@ -75,10 +75,11 @@ primary       = TYPE | IDENTIFIER
 
 
 # --------------- Types --------------- 
-TYPE       = INTEGER | REAL | CHARACTER | STRING | ARRAY | RECORD ;
+TYPE       = INTEGER | REAL | BOOLEAN | CHARACTER | STRING | ARRAY | RECORD ;
 
 INTEGER    = DIGIT+ ; 
 REAL       = DIGIT+ ( "." DIGIT+ ) ;
+BOOLEAN    = "true" | "false" ;
 CHARACTER  = "'" <any char except "'"> "'" ;
 STRING     = "\"" <any char except "\"">* "\"" ;
 ARRAY      = "[" arguments? "]" ( "*" INTEGER )? ;

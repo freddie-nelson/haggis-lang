@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack",
-    "dev": "nodemon src/Haggis.ts"
+    "dev": "nodemon src/Haggis.ts",
+    "generateAst": "ts-node src/tool/GenerateAst.ts src/ast"
   },
   "devDependencies": {
     "@types/node": "^16.10.1",

@@ -1,9 +1,9 @@
 import { readFileSync } from "fs";
 import { createInterface } from "readline";
-import RuntimeError from "./errors/RuntimeError";
-import Scanner from "./Scanner";
-import Token from "./Token";
-import { TokenType } from "./TokenType";
+import RuntimeError from "./runtime/RuntimeError";
+import Scanner from "./scanning/Scanner";
+import Token from "./scanning/Token";
+import { TokenType } from "./scanning/TokenType";
 
 export default class Haggis {
   // static readonly interpreter = new Interpreter();

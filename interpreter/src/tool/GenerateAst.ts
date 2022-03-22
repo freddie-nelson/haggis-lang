@@ -11,43 +11,66 @@ export default class GenerateAst {
     const outputDir = args[0];
 
     this.defineAst(outputDir, "Expr", [
-      "Assign       :: name: Token, value: Expr",
-      "Logical      :: left: Expr, operator: Token, right: Expr",
-      "Binary       :: left: Expr, operator: Token, right: Expr",
-      "Call         :: callee: Expr, paren: Token, args: Expr[]",
-      "Get          :: object: Expr, name: Token",
-      "Set          :: object: Expr, name: Token, value: Expr",
-      "This         :: keyword: Token",
-      "Super        :: keyword: Token, property: Token",
-      "SuperCall    :: keyword: Token, args: Expr[]",
-      "Grouping     :: expression: Expr",
-      "Literal      :: value: any",
-      "Unary        :: operator: Token, right: Expr",
-      "Variable     :: name: Token",
-      "FunctionExpr :: params: Token[], body: Stmt[]",
+      "Grouping :: expression: Expr",
+      "Logical  :: left: Expr, operator: Token, right: Expr",
+      "Binary   :: left: Expr, operator: Token, right: Expr",
+      "Unary    :: operator: Token, right: Expr",
+
+      "Call     :: callee: Expr, paren: Token, args: Expr[]",
+
+      "This     :: keyword: Token",
+      "Super    :: keyword: Token, method: Token",
+
+      "Literal  :: value: any, type: Type",
+
+      "Variable :: name: Token",
+      "Array    :: startBracket: Token, items: Expr[], endBracket: Token",
+      "Record   :: startBrace: Token, fields: Token[], values: Expr[], endBrace: Token",
+
+      "Get      :: object: Expr, name: Token",
+      "Index    :: object: Expr, bracket: Token, index: Expr",
     ]);
 
     this.defineAst(outputDir, "Stmt", [
-      "Block      :: statements: Stmt[]",
-      "Expression :: expression: Expr",
-      "Function   :: name: Token, params: Token[], body: Stmt[]",
-      "Return     :: keyword: Token, value: Expr | undefined",
+      "Record     :: name: Token, fields: Parameter[]",
+      "Class      :: name: Token, superclass: VariableExpr | undefined, fields: Parameter[], initializer: ProcedureStmt | undefined, methods: (FunctionStmt | ProcedureStmt)[]",
+
+      "Procedure  :: name: Token, params: Parameter[], body: Stmt",
+      "Function   :: name: Token, params: Parameter[], returnType: TypeExpr, body: Stmt",
+
+      "Var        :: name: Token, type: TypeExpr | undefined, initializer: Expr",
+      "RecieveVar :: name: Token, type: TypeExpr | undefined, sender: Token | Expr",
+
       "If         :: condition: Expr, thenBranch: Stmt, elseBranch: Stmt | undefined",
-      "Print      :: expression: Expr",
-      "Var        :: name: Token, initializer: Expr | undefined",
-      "While      :: condition: Expr, body: Stmt, isFor: boolean = false, hasIncrement: boolean = false",
-      "Class      :: name: Token, superclass: Variable | undefined, properties: ClassProperties, staticProperties: ClassProperties",
-      "Break      :: keyword: Token",
-      "Continue   :: keyword: Token",
+
+      "While      :: condition: Expr, body: Stmt",
+      "Until      :: body: Stmt, condition: Expr",
+
+      "For        :: counter: Token, lower: Expr, upper: Expr, step: Expr, body: Stmt",
+      "ForEach    :: iterator: Token, object: Expr, body: Stmt",
+
+      "Set        :: object: Expr, value: Expr",
+
+      "Create     :: file: Expr",
+      "Open       :: file: Expr",
+      "Close      :: file: Expr",
+
+      "Send       :: value: Expr, dest: Token | Expr",
+      "Recieve    :: object: Expr, sender: Token | Expr",
+
+      "Return     :: value: Expr | undefined",
+
+      "Expression :: expression: Expr",
     ]);
   }
 
   private static defineAst(outputDir: string, baseName: string, types: string[]) {
     const path = `${outputDir}/${baseName}.ts`;
     const data = `
-    import Token from "./Token";
-    import { ClassProperties } from "./LoxClass";
-    ${baseName !== "Expr" ? 'import { Expr, Variable } from "./Expr"' : ""};
+    import Parameter from "./Parameter"
+    import Token from "../scanning/Token";
+    import { Type, TypeExpr } from "./TypeExpr";
+    ${baseName !== "Expr" ? 'import { Expr, VariableExpr } from "./Expr"' : ""};
     ${baseName !== "Stmt" ? 'import { Stmt } from "./Stmt"' : ""};
 
     export abstract class ${baseName} {
@@ -72,7 +95,7 @@ export default class GenerateAst {
     export interface Visitor<T> {
       ${types.reduce((acc, t) => {
         const typeName = t.split(":")[0].trim();
-        return acc + `visit${typeName}${baseName}(${baseName.toLowerCase()}: ${typeName}): T;\n`;
+        return acc + `visit${typeName}${baseName}(${baseName.toLowerCase()}: ${typeName}${baseName}): T;\n`;
       }, "")}
     }
     `;
@@ -100,7 +123,7 @@ export default class GenerateAst {
     }
 
     let data = `
-      export class ${className} extends ${baseName} {
+      export class ${className}${baseName} extends ${baseName} {
         ${props.join("\n")}
 
         constructor(${args.join(",")}) {

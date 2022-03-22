@@ -1,6 +1,7 @@
-import Haggis from "./Haggis";
+import Haggis from "../Haggis";
 import Token from "./Token";
 import { TokenType } from "./TokenType";
+import keywords from "./keywords";
 
 export default class Scanner {
   private readonly source: string;
@@ -14,48 +15,6 @@ export default class Scanner {
 
   /** The line number we are on in the source */
   private line = 1;
-
-  private static keywords: { [index: string]: TokenType } = {
-    MOD: TokenType.MOD,
-    AND: TokenType.AND,
-    OR: TokenType.OR,
-    NOT: TokenType.NOT,
-    DISPLAY: TokenType.DISPLAY,
-    KEYBOARD: TokenType.KEYBOARD,
-    RECORD: TokenType.RECORD,
-    IS: TokenType.IS,
-    CLASS: TokenType.CLASS,
-    INHERITS: TokenType.INHERITS,
-    WITH: TokenType.WITH,
-    METHODS: TokenType.METHODS,
-    OVERRIDE: TokenType.OVERRIDE,
-    CONSTRUCTOR: TokenType.CONSTRUCTOR,
-    PROCEDURE: TokenType.PROCEDURE,
-    FUNCTION: TokenType.FUNCTION,
-    DECLARE: TokenType.DECLARE,
-    AS: TokenType.AS,
-    INITIALLY: TokenType.INITIALLY,
-    IF: TokenType.IF,
-    THEN: TokenType.THEN,
-    ELSE: TokenType.ELSE,
-    WHILE: TokenType.WHILE,
-    DO: TokenType.DO,
-    REPEAT: TokenType.REPEAT,
-    UNTIL: TokenType.UNTIL,
-    FOR: TokenType.FOR,
-    FROM: TokenType.FROM,
-    TO: TokenType.TO,
-    STEP: TokenType.STEP,
-    EACH: TokenType.EACH,
-    SET: TokenType.SET,
-    CREATE: TokenType.CREATE,
-    OPEN: TokenType.OPEN,
-    CLOSE: TokenType.CLOSE,
-    SEND: TokenType.SEND,
-    RECIEVE: TokenType.RECIEVE,
-    RETURN: TokenType.RETURN,
-    END: TokenType.END,
-  };
 
   constructor(source: string) {
     this.source = source;
@@ -129,11 +88,11 @@ export default class Scanner {
         break;
 
       case ";":
-        this.addToken(TokenType.SEPERATOR);
-        break;
       case "\n":
-        this.line++;
-        this.addToken(TokenType.SEPERATOR);
+        if (this.tokens.length === 0 || this.tokens[this.tokens.length - 1].type !== TokenType.SEPERATOR)
+          this.addToken(TokenType.SEPERATOR);
+
+        if (c === "\n") this.line++;
         break;
 
       // comparision operators
@@ -172,7 +131,7 @@ export default class Scanner {
 
         if (!Haggis.hadError) {
           const token = this.tokens.pop();
-          const char = new Token(TokenType.CHARACTER, token.lexeme, token.literal, token.line, token.pos);
+          const char = new Token(TokenType.CHARACTER, token.lexeme, token.literal, token.line, token.column);
 
           if (token.literal.length > 1) {
             Haggis.error(char, "More than one character in character literal.");
@@ -237,7 +196,7 @@ export default class Scanner {
     while (this.isAlphaNumeric(this.peek())) this.advance();
 
     const text = this.source.substring(this.start, this.current);
-    let type = Scanner.keywords[text];
+    let type = keywords[text];
     if (type === undefined) type = TokenType.IDENTIFIER;
 
     this.addToken(type);
