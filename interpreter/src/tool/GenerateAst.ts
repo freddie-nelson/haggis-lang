@@ -35,30 +35,30 @@ export default class GenerateAst {
       "Record     :: name: Token, fields: Parameter[]",
       "Class      :: name: Token, superclass: VariableExpr | undefined, fields: Parameter[], initializer: ProcedureStmt | undefined, methods: (FunctionStmt | ProcedureStmt)[]",
 
-      "Procedure  :: name: Token, params: Parameter[], body: Stmt",
-      "Function   :: name: Token, params: Parameter[], returnType: TypeExpr, body: Stmt",
+      "Procedure  :: name: Token, params: Parameter[], body: Stmt[]",
+      "Function   :: name: Token, params: Parameter[], returnType: TypeExpr, body: Stmt[]",
 
       "Var        :: name: Token, type: TypeExpr | undefined, initializer: Expr",
       "RecieveVar :: name: Token, type: TypeExpr | undefined, sender: Token | Expr",
 
-      "If         :: condition: Expr, thenBranch: Stmt, elseBranch: Stmt | undefined",
+      "If         :: condition: Expr, thenBranch: Stmt[], elseBranch: Stmt[] | undefined",
 
-      "While      :: condition: Expr, body: Stmt",
-      "Until      :: body: Stmt, condition: Expr",
+      "While      :: condition: Expr, body: Stmt[]",
+      "Until      :: body: Stmt[], condition: Expr",
 
-      "For        :: counter: Token, lower: Expr, upper: Expr, step: Expr, body: Stmt",
-      "ForEach    :: iterator: Token, object: Expr, body: Stmt",
+      "For        :: counter: Token, lower: Expr, upper: Expr, step: Expr, body: Stmt[]",
+      "ForEach    :: iterator: Token, object: Expr, body: Stmt[]",
 
       "Set        :: object: Expr, value: Expr",
 
-      "Create     :: file: Expr",
-      "Open       :: file: Expr",
-      "Close      :: file: Expr",
+      "Create     :: keyword: Token, file: Expr",
+      "Open       :: keyword: Token, file: Expr",
+      "Close      :: keyword: Token, file: Expr",
 
       "Send       :: value: Expr, dest: Token | Expr",
       "Recieve    :: object: Expr, sender: Token | Expr",
 
-      "Return     :: value: Expr | undefined",
+      "Return     :: keyword: Token, value: Expr | undefined",
 
       "Expression :: expression: Expr",
     ]);

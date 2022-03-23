@@ -1,0 +1,2 @@
+DECLARE foo INITIALLY "Hello World!"
+SET foo TO "Bye World!"

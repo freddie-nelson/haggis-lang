@@ -20,7 +20,7 @@ procDecl          = "PROCEDURE" procedure "END" "PROCEDURE" ;
 funcDecl          = "FUNCTION" function "END" "FUNCTION" ;
 
 declaration       = varDecl | statement ;
-varDecl           = "DECLARE" IDENTIFER ( "AS" TYPE_DECL )? "INITIALLY" ( ( "FROM" SYS_ENTITY ) | expression ) SEPERATOR ;
+varDecl           = "DECLARE" IDENTIFER ( "AS" TYPE_DECL )? "INITIALLY" ( ( "FROM" SYS_ENTITY ) | expression ) SEPARATOR ;
 
 # --------------- Statements --------------- 
 
@@ -33,26 +33,26 @@ statement   = ifStmt
             | returnStmt
             | exprStmt ;
 
-ifStmt      = "IF" expression "THEN" declaration* ( "ELSE" declaration* )? "END" "IF" SEPERATOR? ;
+ifStmt      = "IF" expression "THEN" body ( "ELSE" body )? "END" "IF" SEPARATOR? ;
 
-whileStmt   = "WHILE" expression "DO" declaration* "END" "WHILE" SEPERATOR? ;
-untilStmt   = "REPEAT" declaration* "UNTIL" expression SEPERATOR ;
+whileStmt   = "WHILE" expression "DO" body "END" "WHILE" SEPARATOR? ;
+untilStmt   = "REPEAT" body "UNTIL" expression SEPARATOR ;
 
-forStmt     = "FOR" IDENTIFER "FROM" expression "TO" expression ( "STEP" expression ) "DO" declaration* "END" "FOR" SEPERATOR? ;
-forEachStmt = "FOR" "EACH" IDENTIFER "FROM" expression "DO" declaration* "END" "FOR" "EACH" SEPERATOR? ;
+forStmt     = "FOR" IDENTIFER "FROM" expression "TO" expression ( "STEP" expression )? "DO" body "END" "FOR" SEPARATOR? ;
+forEachStmt = "FOR" "EACH" IDENTIFER "FROM" expression "DO" body "END" "FOR" "EACH" SEPARATOR? ;
 
-setStmt     = "SET" expression "TO" expression SEPERATOR ;
+setStmt     = "SET" expression "TO" expression SEPARATOR ;
 
-createStmt  = "CREATE" FILE SEPERATOR ;
-openStmt    = "OPEN" FILE SEPERATOR ;
-closeStmt   = "CLOSE" FILE SEPERATOR ;
+createStmt  = "CREATE" FILE SEPARATOR ;
+openStmt    = "OPEN" FILE SEPARATOR ;
+closeStmt   = "CLOSE" FILE SEPARATOR ;
 
-sendStmt    = "SEND" expression "TO" SYS_ENTITY SEPERATOR ;
-recieveStmt = "RECIEVE" expression "FROM" SYS_ENTITY SEPERATOR ;
+sendStmt    = "SEND" expression "TO" SYS_ENTITY SEPARATOR ;
+recieveStmt = "RECIEVE" expression "FROM" SYS_ENTITY SEPARATOR ;
 
-returnStmt  = "RETURN" expression? SEPERATOR;
+returnStmt  = "RETURN" expression? SEPARATOR;
 
-exprStmt    = expression SEPERATOR ;
+exprStmt    = expression SEPARATOR ;
 
 # --------------- Expressions --------------- 
 expression    = logic_or ;
@@ -104,10 +104,11 @@ ARRAY_TYPE   = "ARRAY OF" TYPE_DECL+ ;
 
 
 # --------------- Utility Rules --------------- 
-procedure  = IDENTIFER "(" parameters ")" declaration* ;
-function   = IDENTIFER "(" parameters ")" "AS" TYPE_DECL declaration* ;
+procedure  = IDENTIFER "(" parameters ")" body ;
+function   = IDENTIFER "(" parameters ")" "AS" TYPE_DECL body ;
+body       = SEPARATOR? declaration* ;
 
 parameters = TYPE_DECL IDENTIFIER ( "," TYPE_DECL IDENTIFIER )* ;
 arguments  = expression ( "," expression)* ;
 
-SEPERATOR  = ( ";" | "\n" ) ;
+SEPARATOR  = ( "\n" ) ;

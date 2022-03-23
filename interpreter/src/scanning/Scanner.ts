@@ -87,10 +87,10 @@ export default class Scanner {
         this.addToken(TokenType.DOT);
         break;
 
-      case ";":
+      // case ";":
       case "\n":
-        if (this.tokens.length === 0 || this.tokens[this.tokens.length - 1].type !== TokenType.SEPERATOR)
-          this.addToken(TokenType.SEPERATOR);
+        if (this.tokens.length === 0 || this.tokens[this.tokens.length - 1].type !== TokenType.SEPARATOR)
+          this.addToken(TokenType.SEPARATOR);
 
         if (c === "\n") this.line++;
         break;
@@ -131,7 +131,13 @@ export default class Scanner {
 
         if (!Haggis.hadError) {
           const token = this.tokens.pop();
-          const char = new Token(TokenType.CHARACTER, token.lexeme, token.literal, token.line, token.column);
+          const char = new Token(
+            TokenType.CHARACTER_LITERAL,
+            token.lexeme,
+            token.literal,
+            token.line,
+            token.column
+          );
 
           if (token.literal.length > 1) {
             Haggis.error(char, "More than one character in character literal.");
@@ -173,7 +179,7 @@ export default class Scanner {
 
     // trim surrounding quotes to get literal
     const value = this.source.substring(this.start + 1, this.current - 1);
-    this.addToken(TokenType.STRING, value);
+    this.addToken(TokenType.STRING_LITERAL, value);
   }
 
   private number() {
@@ -186,9 +192,15 @@ export default class Scanner {
 
       while (this.isDigit(this.peek())) this.advance();
 
-      this.addToken(TokenType.REAL, Number.parseFloat(this.source.substring(this.start, this.current)));
+      this.addToken(
+        TokenType.REAL_LITERAL,
+        Number.parseFloat(this.source.substring(this.start, this.current))
+      );
     } else {
-      this.addToken(TokenType.INTEGER, Number.parseInt(this.source.substring(this.start, this.current)));
+      this.addToken(
+        TokenType.INTEGER_LITERAL,
+        Number.parseInt(this.source.substring(this.start, this.current))
+      );
     }
   }
 

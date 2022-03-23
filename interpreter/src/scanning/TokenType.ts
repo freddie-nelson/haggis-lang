@@ -22,7 +22,7 @@ export enum TokenType {
   COMMA,
   DOT,
 
-  SEPERATOR,
+  SEPARATOR,
 
   // comparison operators
   EQUAL,
@@ -34,10 +34,10 @@ export enum TokenType {
 
   // literals
   IDENTIFIER,
-  INTEGER,
-  REAL,
-  CHARACTER,
-  STRING,
+  INTEGER_LITERAL,
+  REAL_LITERAL,
+  CHARACTER_LITERAL,
+  STRING_LITERAL,
 
   // logic operators
   AND,
@@ -49,6 +49,14 @@ export enum TokenType {
   KEYBOARD,
 
   // keywords
+  INTEGER,
+  REAL,
+  BOOLEAN,
+  CHARACTER,
+  STRING,
+  ARRAY,
+  OF,
+
   TRUE,
   FALSE,
 

@@ -12,19 +12,21 @@ export enum Type {
 }
 
 export class TypeExpr {
-  readonly type: Type | TypeExpr;
+  readonly type: Type;
 
-  constructor(type: Type | TypeExpr) {
+  constructor(type: Type) {
     this.type = type;
   }
 }
 
 export class ArrayTypeExpr extends TypeExpr {
+  readonly itemType: TypeExpr;
   readonly length: number;
 
-  constructor(type: Type | TypeExpr, length: number) {
+  constructor(type: Type, itemType: TypeExpr, length: number) {
     super(type);
 
+    this.itemType = itemType;
     this.length = length;
   }
 }

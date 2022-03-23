@@ -1,0 +1,1 @@
+SEND "Hi from SEND statement!" TO DISPLAY

@@ -41,6 +41,7 @@ import Haggis from "../Haggis";
 import SyntaxError from "../scanning/SyntaxError";
 import Token from "../scanning/Token";
 import { TokenType } from "../scanning/TokenType";
+import ImplementationError from "./ImplementationError";
 
 export default class Parser {
   private readonly tokens: Token[];
@@ -81,18 +82,18 @@ export default class Parser {
   }
 
   private statement() {
-    // if (this.match(TokenType.IF)) return this.ifStatement();
-    // if (this.match(TokenType.WHILE)) return this.whileStatement();
-    // if (this.match(TokenType.REPEAT)) return this.untilStatement();
-    // if (this.matchTwo(TokenType.FOR, TokenType.EACH)) return this.forEachStatement();
-    // if (this.match(TokenType.FOR)) return this.forStatement();
-    // if (this.match(TokenType.SET)) return this.setStatement();
-    // if (this.match(TokenType.CREATE)) return this.createStatement();
-    // if (this.match(TokenType.OPEN)) return this.openStatement();
-    // if (this.match(TokenType.CLOSE)) return this.closeStatement();
-    // if (this.match(TokenType.SEND)) return this.sendStatement();
-    // if (this.match(TokenType.RECIEVE)) return this.recieveStatement();
-    // if (this.match(TokenType.RETURN)) return this.returnStatement();
+    if (this.match(TokenType.IF)) return this.ifStatement();
+    if (this.match(TokenType.WHILE)) return this.whileStatement();
+    if (this.match(TokenType.REPEAT)) return this.untilStatement();
+    if (this.matchTwo(TokenType.FOR, TokenType.EACH)) return this.forEachStatement();
+    if (this.match(TokenType.FOR)) return this.forStatement();
+    if (this.match(TokenType.SET)) return this.setStatement();
+    if (this.match(TokenType.CREATE)) return this.createStatement();
+    if (this.match(TokenType.OPEN)) return this.openStatement();
+    if (this.match(TokenType.CLOSE)) return this.closeStatement();
+    if (this.match(TokenType.SEND)) return this.sendStatement();
+    if (this.match(TokenType.RECIEVE)) return this.recieveStatement();
+    if (this.match(TokenType.RETURN)) return this.returnStatement();
 
     return this.expressionStatement();
   }
@@ -113,33 +114,171 @@ export default class Parser {
 
   // // -------------------- STATEMENTS --------------------
 
-  // private ifStatement(): IfStmt {}
+  private ifStatement(): IfStmt {
+    const condition = this.expression();
+    this.consume(TokenType.THEN, "Expect 'THEN' after if condition.");
 
-  // private whileStatement(): WhileStmt {}
+    this.match(TokenType.SEPARATOR);
 
-  // private untilStatement(): UntilStmt {}
+    const thenBranch: Stmt[] = [];
+    while (
+      !this.check(TokenType.ELSE) &&
+      !(this.check(TokenType.END) && this.checkNext(TokenType.IF)) &&
+      !this.isAtEnd()
+    ) {
+      thenBranch.push(this.declaration());
+    }
 
-  // private forEachStatement(): ForEachStmt {}
+    let elseBranch: Stmt[];
+    if (this.match(TokenType.ELSE)) {
+      elseBranch = this.body("Expect 'END IF' after else body.", TokenType.END, TokenType.IF);
+    } else {
+      this.advance();
+      this.consume(TokenType.IF, "Expect 'END IF' after if body.");
+    }
 
-  // private forStatement(): ForStmt {}
+    this.match(TokenType.SEPARATOR);
 
-  // private setStatement(): SetStmt {}
+    return new IfStmt(condition, thenBranch, elseBranch);
+  }
 
-  // private createStatement(): CreateStmt {}
+  private whileStatement(): WhileStmt {
+    const condition = this.expression();
+    this.consume(TokenType.DO, "Expect 'DO' after loop condition.");
 
-  // private openStatement(): OpenStmt {}
+    const body = this.body("Expect 'END WHILE' after while body.", TokenType.END, TokenType.WHILE);
 
-  // private closeStatement(): CloseStmt {}
+    this.match(TokenType.SEPARATOR);
 
-  // private sendStatement(): SendStmt {}
+    return new WhileStmt(condition, body);
+  }
 
-  // private recieveStatement(): RecieveStmt {}
+  private untilStatement(): UntilStmt {
+    // allow separators before loop body
+    this.match(TokenType.SEPARATOR);
 
-  // private returnStatement(): ReturnStmt {}
+    const body = this.body("Expect 'UNTIL' after until body.", TokenType.UNTIL);
+
+    const condition = this.expression();
+    this.consume(TokenType.SEPARATOR, "Expect separator after until condition.");
+
+    return new UntilStmt(body, condition);
+  }
+
+  private forEachStatement(): ForEachStmt {
+    const iterator = this.consume(TokenType.IDENTIFIER, "Expect identifier after 'FOR EACH'");
+
+    this.consume(TokenType.FROM, "Expect 'FROM' after iterator identifer.");
+    const object = this.expression();
+    this.consume(TokenType.DO, "Expect 'DO' after iterating object.");
+
+    const body = this.body(
+      "Expect 'END FOR EACH' after for each body.",
+      TokenType.END,
+      TokenType.FOR,
+      TokenType.EACH
+    );
+    this.match(TokenType.SEPARATOR);
+
+    return new ForEachStmt(iterator, object, body);
+  }
+
+  private forStatement(): ForStmt {
+    const counter = this.consume(TokenType.IDENTIFIER, "Expect identifer after 'FOR'.");
+
+    this.consume(TokenType.FROM, "Expect 'FROM' after counter identifer.");
+    const lower = this.expression();
+
+    this.consume(TokenType.TO, "Expect 'TO' after lower bound.");
+    const upper = this.expression();
+
+    let step: Expr = new LiteralExpr(1, Type.INTEGER);
+    if (this.match(TokenType.STEP)) {
+      step = this.expression();
+      this.consume(TokenType.DO, "Expect 'DO' after step expression.");
+    } else {
+      this.consume(TokenType.DO, "Expect 'DO' after upper bound.");
+    }
+
+    const body = this.body("Expect 'END FOR' after for body.", TokenType.END, TokenType.FOR);
+    this.match(TokenType.SEPARATOR);
+
+    return new ForStmt(counter, lower, upper, step, body);
+  }
+
+  private setStatement(): SetStmt {
+    const object = this.expression();
+    this.consume(TokenType.TO, "Expect 'TO' after object.");
+
+    const value = this.expression();
+    this.consume(TokenType.SEPARATOR, "Expect '\\n' after assignment value.");
+
+    return new SetStmt(object, value);
+  }
+
+  private createStatement(): CreateStmt {
+    const keyword = this.previous();
+
+    const file = this.expression();
+    this.consume(TokenType.SEPARATOR, "Expect '\\n' after file expression.");
+
+    return new CreateStmt(keyword, file);
+  }
+
+  private openStatement(): OpenStmt {
+    const keyword = this.previous();
+
+    const file = this.expression();
+    this.consume(TokenType.SEPARATOR, "Expect '\\n' after file expression.");
+
+    return new OpenStmt(keyword, file);
+  }
+
+  private closeStatement(): CloseStmt {
+    const keyword = this.previous();
+
+    const file = this.expression();
+    this.consume(TokenType.SEPARATOR, "Expect '\\n' after file expression.");
+
+    return new CloseStmt(keyword, file);
+  }
+
+  private sendStatement(): SendStmt {
+    const value = this.expression();
+    this.consume(TokenType.TO, "Expect 'TO' after send value.");
+
+    const reciever = this.systemEntity();
+    this.consume(TokenType.SEPARATOR, "Expect '\\n' after reciever.");
+
+    return new SendStmt(value, reciever);
+  }
+
+  private recieveStatement(): RecieveStmt {
+    const object = this.expression();
+    this.consume(TokenType.FROM, "Expect 'FROM' after recieving object.");
+
+    const sender = this.systemEntity();
+    this.consume(TokenType.SEPARATOR, "Expect '\\n' after sender.");
+
+    return new RecieveStmt(object, sender);
+  }
+
+  private returnStatement(): ReturnStmt {
+    const keyword = this.previous();
+
+    let value: Expr | undefined;
+    if (!this.check(TokenType.SEPARATOR)) {
+      value = this.expression();
+    }
+
+    this.consume(TokenType.SEPARATOR, "Expect '\\n' after return value.");
+
+    return new ReturnStmt(keyword, value);
+  }
 
   private expressionStatement(): ExpressionStmt {
     const expr = this.expression();
-    this.consume(TokenType.SEPERATOR, "Expect ';' or '\\n' after expression.");
+    this.consume(TokenType.SEPARATOR, "Expect '\\n' after expression.");
 
     return new ExpressionStmt(expr);
   }
@@ -301,10 +440,11 @@ export default class Parser {
     if (this.match(TokenType.FALSE)) return new LiteralExpr(false, Type.BOOLEAN);
     if (this.match(TokenType.TRUE)) return new LiteralExpr(true, Type.BOOLEAN);
 
-    if (this.match(TokenType.INTEGER)) return new LiteralExpr(this.previous().literal, Type.INTEGER);
-    if (this.match(TokenType.REAL)) return new LiteralExpr(this.previous().literal, Type.REAL);
-    if (this.match(TokenType.CHARACTER)) return new LiteralExpr(this.previous().literal, Type.CHARACTER);
-    if (this.match(TokenType.STRING)) return new LiteralExpr(this.previous().literal, Type.STRING);
+    if (this.match(TokenType.INTEGER_LITERAL)) return new LiteralExpr(this.previous().literal, Type.INTEGER);
+    if (this.match(TokenType.REAL_LITERAL)) return new LiteralExpr(this.previous().literal, Type.REAL);
+    if (this.match(TokenType.CHARACTER_LITERAL))
+      return new LiteralExpr(this.previous().literal, Type.CHARACTER);
+    if (this.match(TokenType.STRING_LITERAL)) return new LiteralExpr(this.previous().literal, Type.STRING);
 
     if (this.match(TokenType.SUPER)) {
       const keyword = this.previous();
@@ -362,6 +502,8 @@ export default class Parser {
     return new RecordExpr(start, fields, values, end);
   }
 
+  // -------------------- HELPERS --------------------
+
   /**
    * Parses a comma seperated list of expressions.
    *
@@ -379,6 +521,43 @@ export default class Parser {
     }
 
     return expressions;
+  }
+
+  private systemEntity(): Token | Expr {
+    if (this.match(TokenType.DISPLAY) || this.match(TokenType.KEYBOARD)) return this.previous();
+
+    return this.expression();
+  }
+
+  private body(msg: string, curr: TokenType, next?: TokenType, nextNext?: TokenType): Stmt[] {
+    const body: Stmt[] = [];
+
+    this.match(TokenType.SEPARATOR);
+
+    if (nextNext) {
+      while (!this.check(curr) && !this.checkNext(next) && !this.checkNextNext(nextNext) && !this.isAtEnd()) {
+        body.push(this.declaration());
+      }
+
+      this.advance();
+      this.advance();
+      this.consume(nextNext, msg);
+    } else if (next) {
+      while (!this.check(curr) && !this.checkNext(next) && !this.isAtEnd()) {
+        body.push(this.declaration());
+      }
+
+      this.advance();
+      this.consume(next, msg);
+    } else {
+      while (!this.check(curr) && !this.isAtEnd()) {
+        body.push(this.declaration());
+      }
+
+      this.consume(curr, msg);
+    }
+
+    return body;
   }
 
   /**
@@ -407,6 +586,23 @@ export default class Parser {
    */
   private matchTwo(current: TokenType, next: TokenType): boolean {
     if (this.check(current) && this.checkNext(next)) {
+      this.advance();
+      this.advance();
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Checks if the current, next and next token match the given types
+   * and if so, consumes them.
+   *
+   * @returns true when all types match, otherwise false.
+   */
+  private matchThree(current: TokenType, next: TokenType, nextNext: TokenType): boolean {
+    if (this.check(current) && this.checkNext(next) && this.checkNextNext(nextNext)) {
+      this.advance();
       this.advance();
       this.advance();
       return true;
@@ -455,6 +651,18 @@ export default class Parser {
   }
 
   /**
+   * Checks to see if the next next token matches the given type.
+   *
+   * @param type The type to check for
+   * @returns true if the type's match and the next next token exists, otherwise false.
+   */
+  private checkNextNext(type: TokenType): boolean {
+    const next = this.peekNextNext();
+    if (!next || next.type === TokenType.EOF) return false;
+    return next.type === type;
+  }
+
+  /**
    * Consumes the current token, incrementing this.current.
    *
    * @returns The consumed token.
@@ -492,6 +700,15 @@ export default class Parser {
   }
 
   /**
+   * Gets the next next token without consuming it.
+   *
+   * @returns The next next token
+   */
+  private peekNextNext(): Token {
+    return this.tokens[this.current + 2];
+  }
+
+  /**
    * Gets the previous token.
    *
    * @returns The previous token
@@ -509,7 +726,7 @@ export default class Parser {
     this.advance();
 
     while (!this.isAtEnd()) {
-      // if (this.previous().type === TokenType.SEPERATOR) return;
+      // if (this.previous().type === TokenType.SEPARATOR) return;
 
       switch (this.peek().type) {
         case TokenType.RECORD:

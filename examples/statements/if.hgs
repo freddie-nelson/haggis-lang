@@ -1,0 +1,9 @@
+IF 4 < 5 THEN
+  SEND "4 is less than 5" TO DISPLAY
+ELSE 
+  SEND "4 is not less than 5" TO DISPLAY
+END IF
+
+IF 5 > 4 THEN
+  SEND "5 is greater than 4" TO DISPLAY
+END IF
