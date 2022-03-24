@@ -53,18 +53,20 @@ this.fields = fields;
     
       export class ClassStmt extends Stmt {
         readonly name: Token;
-readonly superclass: VariableExpr | undefined;
+readonly superclass: Token | undefined;
 readonly fields: Parameter[];
 readonly initializer: ProcedureStmt | undefined;
 readonly methods: (FunctionStmt | ProcedureStmt)[];
+readonly overrides: Map<ProcedureStmt | FunctionStmt,true>;
 
-        constructor(name: Token,superclass: VariableExpr | undefined,fields: Parameter[],initializer: ProcedureStmt | undefined,methods: (FunctionStmt | ProcedureStmt)[]) {
+        constructor(name: Token,superclass: Token | undefined,fields: Parameter[],initializer: ProcedureStmt | undefined,methods: (FunctionStmt | ProcedureStmt)[],overrides: Map<ProcedureStmt | FunctionStmt,true>) {
           super();
           this.name = name;
 this.superclass = superclass;
 this.fields = fields;
 this.initializer = initializer;
 this.methods = methods;
+this.overrides = overrides;
 
         }
 

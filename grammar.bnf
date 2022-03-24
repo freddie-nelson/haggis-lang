@@ -8,16 +8,16 @@ globalDeclaration = recordDecl
                   | subDecl
                   | declaration ;
 
-recordDecl        = "RECORD" IDENTIFER "IS" "{" parameters "}" ;
+recordDecl        = "RECORD" IDENTIFER "IS" "{" parameters "}" SEPARATOR? ;
 
-classDecl         = "CLASS" IDENTIFER ( ( "INHERITS" IDENTIFER ( "WITH" "{" parameters "}" )? ) | ( "IS" "{" parameters "}" ) )?
-                    ( "METHODS" ( classConstructor | "OVERRIDE"? subDecl )* )?
-                    "END" "CLASS" ;
-classConstructor  = "CONSTRUCTOR" procedure "END" "CONSTRUCTOR" ;
+classDecl         = "CLASS" IDENTIFER ( ( "INHERITS" IDENTIFER ( "WITH" "{" parameters "}" )? ) | ( "IS" "{" parameters "}" ) )? SEPARATOR?
+                    ( "METHODS" SEPARATOR? ( classConstructor | "OVERRIDE"? subDecl )* )?
+                    "END" "CLASS" SEPARATOR? ;
+classConstructor  = "CONSTRUCTOR" "(" parameters? ")" body "END" "CONSTRUCTOR" SEPARATOR? ;
 
 subDecl           = procDecl | funcDecl ;
-procDecl          = "PROCEDURE" procedure "END" "PROCEDURE" ;
-funcDecl          = "FUNCTION" function "END" "FUNCTION" ;
+procDecl          = "PROCEDURE" procedure "END" "PROCEDURE" SEPARATOR? ;
+funcDecl          = "FUNCTION" function "END" "FUNCTION" SEPARATOR? ;
 
 declaration       = varDecl | statement ;
 varDecl           = "DECLARE" IDENTIFER ( "AS" TYPE_DECL )? "INITIALLY" ( ( "FROM" SYS_ENTITY ) | expression ) SEPARATOR ;
@@ -94,21 +94,21 @@ DIGIT      = "0" ... "9" ;
 
 
 # --------------- Type Declarations --------------- 
-TYPE_DECL    = INTEGER_TYPE | REAL_TYPE | CHARACTER_TYPE | STRING_TYPE | ARRAY_TYPE ;
+TYPE_DECL    = INTEGER_TYPE | REAL_TYPE | CHARACTER_TYPE | STRING_TYPE | ARRAY_TYPE | IDENTIFER ;
 
 INTEGER_TYPE = "INTEGER" ;
 REAL_TYPE    = "REAL" ;
 STRING_TYPE  = "CHARACTER" ;
 STRING_TYPE  = "STRING" ;
-ARRAY_TYPE   = "ARRAY OF" TYPE_DECL+ ;
+ARRAY_TYPE   = "ARRAY OF" TYPE_DECL ;
 
 
 # --------------- Utility Rules --------------- 
-procedure  = IDENTIFER "(" parameters ")" body ;
-function   = IDENTIFER "(" parameters ")" "AS" TYPE_DECL body ;
+procedure  = IDENTIFER "(" parameters? ")" body ;
+function   = IDENTIFER "(" parameters? ")" "RETURNS" TYPE_DECL body ;
 body       = SEPARATOR? declaration* ;
 
-parameters = TYPE_DECL IDENTIFIER ( "," TYPE_DECL IDENTIFIER )* ;
-arguments  = expression ( "," expression)* ;
+parameters = SEPARATOR? TYPE_DECL IDENTIFIER ( "," SEPARATOR? TYPE_DECL IDENTIFIER )* SEPARATOR? ;
+arguments  = SEPARATOR? expression ( "," SEPARATOR? expression)* SEPARATOR? ;
 
 SEPARATOR  = ( "\n" ) ;

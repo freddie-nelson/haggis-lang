@@ -7,8 +7,7 @@ export enum Type {
   STRING,
   ARRAY,
 
-  RECORD,
-  CLASS,
+  IDENTIFER,
 }
 
 export class TypeExpr {
@@ -23,10 +22,9 @@ export class ArrayTypeExpr extends TypeExpr {
   readonly itemType: TypeExpr;
   readonly length: number;
 
-  constructor(type: Type, itemType: TypeExpr, length: number) {
+  constructor(type: Type, itemType: TypeExpr) {
     super(type);
 
     this.itemType = itemType;
-    this.length = length;
   }
 }

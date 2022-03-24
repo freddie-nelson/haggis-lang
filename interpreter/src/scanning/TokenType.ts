@@ -73,6 +73,7 @@ export enum TokenType {
   CONSTRUCTOR,
   PROCEDURE,
   FUNCTION,
+  RETURNS,
   DECLARE,
   AS,
   INITIALLY,

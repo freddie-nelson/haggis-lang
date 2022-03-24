@@ -1,0 +1,4 @@
+RECORD Person IS {
+  STRING name,
+  INTEGER age
+}

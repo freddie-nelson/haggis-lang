@@ -33,7 +33,7 @@ export default class GenerateAst {
 
     this.defineAst(outputDir, "Stmt", [
       "Record     :: name: Token, fields: Parameter[]",
-      "Class      :: name: Token, superclass: VariableExpr | undefined, fields: Parameter[], initializer: ProcedureStmt | undefined, methods: (FunctionStmt | ProcedureStmt)[]",
+      "Class      :: name: Token, superclass: Token | undefined, fields: Parameter[], initializer: ProcedureStmt | undefined, methods: (FunctionStmt | ProcedureStmt)[], overrides: Map<ProcedureStmt | FunctionStmt\\, true>",
 
       "Procedure  :: name: Token, params: Parameter[], body: Stmt[]",
       "Function   :: name: Token, params: Parameter[], returnType: TypeExpr, body: Stmt[]",
@@ -105,6 +105,19 @@ export default class GenerateAst {
 
   private static defineType(baseName: string, className: string, fields: string): string {
     const fieldsArr = fields.split(",").map((f) => f.trim());
+
+    for (let i = 0; i < fieldsArr.length; i++) {
+      let f = fieldsArr[i];
+      const slash = f.indexOf("\\");
+
+      if (slash !== -1) {
+        f = f.replace("\\", ",");
+        f += fieldsArr[i + 1];
+
+        fieldsArr[i] = f;
+        fieldsArr.splice(i + 1, 1);
+      }
+    }
 
     let args: string[] = [];
     let props: string[] = [];

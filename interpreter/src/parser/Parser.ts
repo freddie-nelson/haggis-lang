@@ -14,6 +14,7 @@ import {
   UnaryExpr,
   VariableExpr,
 } from "../ast/Expr";
+import Parameter from "../ast/Parameter";
 import {
   ClassStmt,
   CloseStmt,
@@ -36,7 +37,7 @@ import {
   WhileStmt,
   ExpressionStmt,
 } from "../ast/Stmt";
-import { Type } from "../ast/TypeExpr";
+import { ArrayTypeExpr, Type, TypeExpr } from "../ast/TypeExpr";
 import Haggis from "../Haggis";
 import SyntaxError from "../scanning/SyntaxError";
 import Token from "../scanning/Token";
@@ -62,10 +63,10 @@ export default class Parser {
 
   private globalDeclaration(): Stmt {
     try {
-      // if (this.match(TokenType.RECORD)) return this.recordDeclaration();
-      // if (this.match(TokenType.CLASS)) return this.classDeclaration();
-      // if (this.match(TokenType.FUNCTION)) return this.functionDeclaration();
-      // if (this.match(TokenType.PROCEDURE)) return this.procedureDeclaration();
+      if (this.match(TokenType.RECORD)) return this.recordDeclaration();
+      if (this.match(TokenType.CLASS)) return this.classDeclaration();
+      if (this.match(TokenType.FUNCTION)) return this.functionDeclaration();
+      if (this.match(TokenType.PROCEDURE)) return this.procedureDeclaration();
 
       return this.declaration();
     } catch (error) {
@@ -76,7 +77,7 @@ export default class Parser {
   }
 
   private declaration(): Stmt {
-    // if (this.match(TokenType.DECLARE)) return this.varDeclaration();
+    if (this.match(TokenType.DECLARE)) return this.varDeclaration();
 
     return this.statement();
   }
@@ -100,19 +101,159 @@ export default class Parser {
 
   // -------------------- GLOBAL DECLARATIONS --------------------
 
-  // private recordDeclaration(): RecordStmt {}
+  private recordDeclaration(): RecordStmt {
+    const name = this.consume(TokenType.IDENTIFIER, "Expect record name.");
+    this.consume(TokenType.IS, "Expect 'IS' after record name.");
 
-  // private classDeclaration(): ClassStmt {}
+    this.consume(TokenType.LEFT_BRACE, "Expect '{' before record fields.");
+    const fields = this.parameters(TokenType.RIGHT_BRACE, true);
+    this.consume(TokenType.RIGHT_BRACE, "Expect '}' after record fields.");
 
-  // private functionDeclaration(): FunctionStmt {}
+    this.match(TokenType.SEPARATOR);
 
-  // private procedureDeclaration(): ProcedureStmt {}
+    return new RecordStmt(name, fields);
+  }
 
-  // // -------------------- DECLARATIONS --------------------
+  private classDeclaration(): ClassStmt {
+    const name = this.consume(TokenType.IDENTIFIER, "Expect class name.");
 
-  // private varDeclaration(): VarStmt | RecieveVarStmt {}
+    let superclass: Token;
+    let fields: Parameter[] = [];
 
-  // // -------------------- STATEMENTS --------------------
+    if (this.match(TokenType.INHERITS)) {
+      superclass = this.consume(TokenType.IDENTIFIER, "Expect superclass name.");
+
+      if (this.match(TokenType.WITH)) fields = this.classFields();
+    } else if (this.match(TokenType.IS)) {
+      fields = this.classFields();
+    }
+
+    this.match(TokenType.SEPARATOR);
+
+    let initializer: ProcedureStmt;
+    const methods: (ProcedureStmt | FunctionStmt)[] = [];
+    const overrides: Map<ProcedureStmt | FunctionStmt, true> = new Map();
+
+    if (this.match(TokenType.METHODS)) {
+      this.match(TokenType.SEPARATOR);
+
+      while (!this.check(TokenType.END) && !this.checkNext(TokenType.CLASS) && !this.isAtEnd()) {
+        if (this.match(TokenType.OVERRIDE)) {
+          const sub = this.subDeclaration();
+          overrides.set(sub, true);
+          methods.push(sub);
+        } else if (this.match(TokenType.CONSTRUCTOR)) {
+          initializer = this.classConstructor();
+        } else {
+          methods.push(this.subDeclaration());
+        }
+      }
+    }
+
+    if (!this.matchTwo(TokenType.END, TokenType.CLASS)) {
+      throw this.error(this.previous(), "Expect 'END CLASS' after class declaration.");
+    }
+
+    this.match(TokenType.SEPARATOR);
+
+    return new ClassStmt(name, superclass, fields, initializer, methods, overrides);
+  }
+
+  private classFields(): Parameter[] {
+    this.consume(TokenType.LEFT_BRACE, "Expect class fields.");
+    const fields = this.parameters(TokenType.RIGHT_BRACE, true);
+    this.consume(TokenType.RIGHT_BRACE, "Expect '}' after class fields.");
+
+    return fields;
+  }
+
+  private classConstructor(): ProcedureStmt {
+    const name = this.previous();
+    this.consume(TokenType.LEFT_PAREN, "Expect '(' after 'CONSTRUCTOR'.");
+
+    const params = this.parameters(TokenType.RIGHT_PAREN, false, 255, "Can't have more than 255 parameters.");
+    this.consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters list.");
+
+    const body = this.body(
+      "Expect 'END CONSTRUCTOR' after constructor body.",
+      TokenType.END,
+      TokenType.CONSTRUCTOR
+    );
+
+    this.match(TokenType.SEPARATOR);
+
+    return new ProcedureStmt(name, params, body);
+  }
+
+  private subDeclaration(): ProcedureStmt | FunctionStmt {
+    if (!this.match(TokenType.PROCEDURE, TokenType.FUNCTION))
+      throw this.error(this.previous(), "Expect procedure or function declaration.");
+
+    if (this.previous().type === TokenType.PROCEDURE) return this.procedureDeclaration();
+    else return this.functionDeclaration();
+  }
+
+  private functionDeclaration(): FunctionStmt {
+    const name = this.consume(TokenType.IDENTIFIER, "Expect function name.");
+    this.consume(TokenType.LEFT_PAREN, "Expect '(' after function name.");
+
+    const params = this.parameters(TokenType.RIGHT_PAREN, false, 255, "Can't have more than 255 parameters.");
+    this.consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters list.");
+
+    this.consume(TokenType.RETURNS, "Expect return type after parameter list.");
+    const returnType = this.typeExpression();
+
+    const body = this.body("Expect 'END FUNCTION' after function body.", TokenType.END, TokenType.FUNCTION);
+
+    this.match(TokenType.SEPARATOR);
+
+    return new FunctionStmt(name, params, returnType, body);
+  }
+
+  private procedureDeclaration(): ProcedureStmt {
+    const name = this.consume(TokenType.IDENTIFIER, "Expect procedure name.");
+    this.consume(TokenType.LEFT_PAREN, "Expect '(' after procedure name.");
+
+    const params = this.parameters(TokenType.RIGHT_PAREN, false, 255, "Can't have more than 255 parameters.");
+    this.consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters list.");
+
+    const body = this.body(
+      "Expect 'END PROCEDURE' after procedure body.",
+      TokenType.END,
+      TokenType.PROCEDURE
+    );
+
+    this.match(TokenType.SEPARATOR);
+
+    return new ProcedureStmt(name, params, body);
+  }
+
+  // -------------------- DECLARATIONS --------------------
+
+  private varDeclaration(): VarStmt | RecieveVarStmt {
+    const name = this.consume(TokenType.IDENTIFIER, "Expect variable name after 'DECLARE'.");
+
+    let type: TypeExpr;
+    if (this.match(TokenType.AS)) {
+      type = this.typeExpression();
+    }
+
+    this.consume(TokenType.INITIALLY, "Expect variable initializer.");
+
+    if (this.match(TokenType.FROM)) {
+      const entity = this.systemEntity();
+      this.consume(TokenType.SEPARATOR, "Expect '\\n' after system entity.");
+
+      return new RecieveVarStmt(name, type, entity);
+    } else {
+      const initializer = this.expression();
+      this.consume(TokenType.SEPARATOR, "Expect '\\n' after variable initializer.");
+
+      return new VarStmt(name, type, initializer);
+    }
+  }
+
+  // -------------------- STATEMENTS --------------------
 
   private ifStatement(): IfStmt {
     const condition = this.expression();
@@ -502,6 +643,35 @@ export default class Parser {
     return new RecordExpr(start, fields, values, end);
   }
 
+  // -------------------- TYPE EXPRESSION --------------------
+
+  private typeExpression(): TypeExpr {
+    if (
+      !this.match(
+        TokenType.INTEGER,
+        TokenType.REAL,
+        TokenType.BOOLEAN,
+        TokenType.CHARACTER,
+        TokenType.STRING,
+        TokenType.ARRAY,
+        TokenType.IDENTIFIER
+      )
+    ) {
+      throw this.error(this.peek(), "Expect type expression.");
+    }
+
+    const token = this.previous();
+    if (token.type === TokenType.ARRAY) {
+      this.consume(TokenType.OF, "Expect 'OF' after array type expression.");
+      return new ArrayTypeExpr(Type.ARRAY, this.typeExpression());
+    } else {
+      const tokenName = TokenType[token.type];
+      const type: Type = Type[tokenName as unknown as number] as any as Type;
+
+      return new TypeExpr(type);
+    }
+  }
+
   // -------------------- HELPERS --------------------
 
   /**
@@ -516,11 +686,38 @@ export default class Parser {
       do {
         if (expressions.length >= max) this.error(this.peek(), maxMsg);
 
+        this.match(TokenType.SEPARATOR);
+
         expressions.push(this.expression());
       } while (this.match(TokenType.COMMA));
     }
 
+    this.match(TokenType.SEPARATOR);
+
     return expressions;
+  }
+
+  private parameters(terminator: TokenType, required = false, max = Infinity, maxMsg = ""): Parameter[] {
+    const parameters: Parameter[] = [];
+
+    if (!this.check(terminator)) {
+      do {
+        if (parameters.length >= max) this.error(this.peek(), maxMsg);
+
+        this.match(TokenType.SEPARATOR);
+
+        const type = this.typeExpression();
+        const name = this.consume(TokenType.IDENTIFIER, "Expect parameter name after type.");
+
+        parameters.push(new Parameter(name, type));
+      } while (this.match(TokenType.COMMA));
+    }
+
+    if (required && parameters.length === 0) this.error(this.previous(), "Parameter list cannot be empty.");
+
+    this.match(TokenType.SEPARATOR);
+
+    return parameters;
   }
 
   private systemEntity(): Token | Expr {

@@ -28,6 +28,7 @@ const keywords: { [index: string]: TokenType } = {
   CONSTRUCTOR: TokenType.CONSTRUCTOR,
   PROCEDURE: TokenType.PROCEDURE,
   FUNCTION: TokenType.FUNCTION,
+  RETURNS: TokenType.RETURNS,
   DECLARE: TokenType.DECLARE,
   AS: TokenType.AS,
   INITIALLY: TokenType.INITIALLY,
