@@ -1,8 +1,8 @@
 program = globalDeclaration* EOF ;
 
 
-
 # --------------- Declarations --------------- 
+
 globalDeclaration = recordDecl 
                   | classDecl
                   | subDecl
@@ -21,6 +21,7 @@ funcDecl          = "FUNCTION" function "END" "FUNCTION" SEPARATOR? ;
 
 declaration       = varDecl | statement ;
 varDecl           = "DECLARE" IDENTIFER ( "AS" TYPE_DECL )? "INITIALLY" ( ( "FROM" SYS_ENTITY ) | expression ) SEPARATOR ;
+
 
 # --------------- Statements --------------- 
 
@@ -53,6 +54,7 @@ recieveStmt = "RECIEVE" expression "FROM" SYS_ENTITY SEPARATOR ;
 returnStmt  = "RETURN" expression? SEPARATOR;
 
 exprStmt    = expression SEPARATOR ;
+
 
 # --------------- Expressions --------------- 
 expression    = logic_or ;

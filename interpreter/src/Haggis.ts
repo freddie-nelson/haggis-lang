@@ -1,13 +1,15 @@
 import { readFileSync } from "fs";
 import { createInterface } from "readline";
-import Parser from "./parser/Parser";
+import Parser from "./parsing/Parser";
+import Resolver from "./resolution/Resolver";
+import Interpreter from "./runtime/Interpreter";
 import RuntimeError from "./runtime/RuntimeError";
 import Scanner from "./scanning/Scanner";
 import Token from "./scanning/Token";
 import { TokenType } from "./scanning/TokenType";
 
 export default class Haggis {
-  // static readonly interpreter = new Interpreter();
+  static readonly interpreter = new Interpreter();
 
   static hadError = false;
   static hadRuntimeError = false;
@@ -71,13 +73,11 @@ export default class Haggis {
     const parser = new Parser(tokens);
     const statements = parser.parse();
 
-    console.log(statements);
-
     // stop if there was a syntax error
     if (this.hadError) return;
 
-    // const resolver = new Resolver(this.interpreter);
-    // resolver.resolve(statements);
+    const resolver = new Resolver(this.interpreter);
+    resolver.resolve(statements);
 
     // stop if there was a resolution error
     if (this.hadError) return;
