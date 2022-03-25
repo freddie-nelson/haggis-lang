@@ -54,7 +54,8 @@ export enum FunctionType {
   PROCEDURE,
   FUNCTION,
   INITIALIZER,
-  METHOD,
+  METHOD_PROCEDURE,
+  METHOD_FUNCTION,
 }
 
 export enum ClassType {
@@ -87,6 +88,8 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
   private currentFunction: FunctionType = FunctionType.NONE;
   private currentClass: ClassType = ClassType.NONE;
   private currentLoop: LoopType = LoopType.NONE;
+
+  private currentReturn = false;
 
   constructor(interpreter: Interpreter) {
     this.interpreter = interpreter;
@@ -128,7 +131,10 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     }
 
     stmt.methods.forEach((m) => {
-      this.resolveFunction(m, FunctionType.METHOD);
+      let type = FunctionType.METHOD_PROCEDURE;
+      if (m instanceof FunctionStmt) type = FunctionType.METHOD_FUNCTION;
+
+      this.resolveFunction(m, type);
     });
 
     this.endScope();
@@ -270,9 +276,16 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     if (stmt.value) {
       if (this.currentFunction === FunctionType.INITIALIZER)
         Haggis.error(stmt.keyword, "Can't return a value from an initializer.");
+      if (
+        this.currentFunction === FunctionType.PROCEDURE ||
+        this.currentFunction === FunctionType.METHOD_PROCEDURE
+      )
+        Haggis.error(stmt.keyword, "Can't return a value from a procedure.");
 
       this.resolve(stmt.value);
     }
+
+    this.currentReturn = true;
   }
 
   visitVariableExpr(expr: VariableExpr) {
@@ -367,6 +380,8 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     const enclosingLoop = this.currentLoop;
     this.currentLoop = LoopType.NONE;
 
+    this.currentReturn = false;
+
     this.beginScope();
     func.params.forEach((p) => {
       this.declare(p.name);
@@ -375,6 +390,14 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     this.resolve(func.body);
     this.endScope();
 
+    if (
+      (this.currentFunction === FunctionType.FUNCTION ||
+        this.currentFunction === FunctionType.METHOD_FUNCTION) &&
+      !this.currentReturn
+    )
+      Haggis.error(func.name, "Must return a value from a function.");
+
+    this.currentReturn = false;
     this.currentFunction = enclosingFunction;
     this.currentLoop = enclosingLoop;
   }
