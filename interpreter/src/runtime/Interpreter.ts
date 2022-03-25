@@ -6,7 +6,7 @@ import RuntimeError from "./RuntimeError";
 
 export default class Interpreter {
   readonly globals = new Environment();
-  private readonly locals: Map<Expr, number> = new Map();
+  readonly locals: Map<Expr, number> = new Map();
 
   private environment = this.globals;
 
