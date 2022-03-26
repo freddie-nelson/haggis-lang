@@ -1,12 +1,13 @@
 import { Expr } from "../ast/Expr";
 import { Stmt } from "../ast/Stmt";
+import { TypeExpr } from "../ast/TypeExpr";
 import Haggis from "../Haggis";
 import Environment from "./Environment";
 import RuntimeError from "./RuntimeError";
 
 export default class Interpreter {
   readonly globals = new Environment();
-  readonly locals: Map<Expr, number> = new Map();
+  readonly locals: Map<Expr | TypeExpr, number> = new Map();
 
   private environment = this.globals;
 
@@ -24,7 +25,7 @@ export default class Interpreter {
     // return stmt.accept(this);
   }
 
-  resolve(expr: Expr, depth: number) {
+  resolve(expr: Expr | TypeExpr, depth: number) {
     this.locals.set(expr, depth);
   }
 }

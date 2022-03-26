@@ -1,7 +1,7 @@
 
     import Parameter from "./Parameter"
     import Token from "../scanning/Token";
-    import { Type, TypeExpr } from "./TypeExpr";
+    import { Type, TypeExpr, IdentifierTypeExpr } from "./TypeExpr";
     ;
     import { Stmt } from "./Stmt";
 

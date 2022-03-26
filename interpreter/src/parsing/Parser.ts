@@ -37,7 +37,7 @@ import {
   WhileStmt,
   ExpressionStmt,
 } from "../ast/Stmt";
-import { ArrayTypeExpr, Type, TypeExpr } from "../ast/TypeExpr";
+import { ArrayTypeExpr, IdentifierTypeExpr, Type, TypeExpr } from "../ast/TypeExpr";
 import Haggis from "../Haggis";
 import SyntaxError from "../scanning/SyntaxError";
 import Token from "../scanning/Token";
@@ -117,7 +117,7 @@ export default class Parser {
   private classDeclaration(): ClassStmt {
     const name = this.consume(TokenType.IDENTIFIER, "Expect class name.");
 
-    let superclass: Token;
+    let superclass: Token | undefined;
     let fields: Parameter[] = [];
 
     if (this.match(TokenType.INHERITS)) {
@@ -154,9 +154,24 @@ export default class Parser {
       throw this.error(this.previous(), "Expect 'END CLASS' after class declaration.");
     }
 
+    methods.forEach((m) => {
+      if (methods.find((method) => method !== m && method.name.lexeme === m.name.lexeme))
+        this.error(m.name, `Duplicate methods '${m.name.lexeme}' in class '${name.lexeme}'.`);
+    });
+
+    if (overrides.size > 0 && !superclass)
+      this.error(name, `Can only have override methods in a derived class.`);
+
     this.match(TokenType.SEPARATOR);
 
-    return new ClassStmt(name, superclass, fields, initializer, methods, overrides);
+    return new ClassStmt(
+      name,
+      superclass ? new IdentifierTypeExpr(Type.IDENTIFER, superclass) : undefined,
+      fields,
+      initializer,
+      methods,
+      overrides
+    );
   }
 
   private classFields(): Parameter[] {
@@ -256,6 +271,8 @@ export default class Parser {
   // -------------------- STATEMENTS --------------------
 
   private ifStatement(): IfStmt {
+    const keyword = this.previous();
+
     const condition = this.expression();
     this.consume(TokenType.THEN, "Expect 'THEN' after if condition.");
 
@@ -280,10 +297,12 @@ export default class Parser {
 
     this.match(TokenType.SEPARATOR);
 
-    return new IfStmt(condition, thenBranch, elseBranch);
+    return new IfStmt(keyword, condition, thenBranch, elseBranch);
   }
 
   private whileStatement(): WhileStmt {
+    const keyword = this.previous();
+
     const condition = this.expression();
     this.consume(TokenType.DO, "Expect 'DO' after loop condition.");
 
@@ -291,10 +310,12 @@ export default class Parser {
 
     this.match(TokenType.SEPARATOR);
 
-    return new WhileStmt(condition, body);
+    return new WhileStmt(keyword, condition, body);
   }
 
   private untilStatement(): UntilStmt {
+    const keyword = this.previous();
+
     // allow separators before loop body
     this.match(TokenType.SEPARATOR);
 
@@ -303,10 +324,12 @@ export default class Parser {
     const condition = this.expression();
     this.consume(TokenType.SEPARATOR, "Expect separator after until condition.");
 
-    return new UntilStmt(body, condition);
+    return new UntilStmt(keyword, body, condition);
   }
 
   private forEachStatement(): ForEachStmt {
+    const keyword = this.previous();
+
     const iterator = this.consume(TokenType.IDENTIFIER, "Expect identifier after 'FOR EACH'");
 
     this.consume(TokenType.FROM, "Expect 'FROM' after iterator identifer.");
@@ -321,10 +344,12 @@ export default class Parser {
     );
     this.match(TokenType.SEPARATOR);
 
-    return new ForEachStmt(iterator, object, body);
+    return new ForEachStmt(keyword, iterator, object, body);
   }
 
   private forStatement(): ForStmt {
+    const keyword = this.previous();
+
     const counter = this.consume(TokenType.IDENTIFIER, "Expect identifer after 'FOR'.");
 
     this.consume(TokenType.FROM, "Expect 'FROM' after counter identifer.");
@@ -344,17 +369,23 @@ export default class Parser {
     const body = this.body("Expect 'END FOR' after for body.", TokenType.END, TokenType.FOR);
     this.match(TokenType.SEPARATOR);
 
-    return new ForStmt(counter, lower, upper, step, body);
+    return new ForStmt(keyword, counter, lower, upper, step, body);
   }
 
   private setStatement(): SetStmt {
+    const keyword = this.previous();
+
     const object = this.expression();
     this.consume(TokenType.TO, "Expect 'TO' after object.");
 
     const value = this.expression();
     this.consume(TokenType.SEPARATOR, "Expect '\\n' after assignment value.");
 
-    return new SetStmt(object, value);
+    if (!(object instanceof VariableExpr) && !(object instanceof GetExpr) && !(object instanceof IndexExpr)) {
+      this.error(keyword, "Invalid assignment target.");
+    }
+
+    return new SetStmt(keyword, object, value);
   }
 
   private createStatement(): CreateStmt {
@@ -385,23 +416,27 @@ export default class Parser {
   }
 
   private sendStatement(): SendStmt {
+    const keyword = this.previous();
+
     const value = this.expression();
     this.consume(TokenType.TO, "Expect 'TO' after send value.");
 
     const reciever = this.systemEntity();
     this.consume(TokenType.SEPARATOR, "Expect '\\n' after reciever.");
 
-    return new SendStmt(value, reciever);
+    return new SendStmt(keyword, value, reciever);
   }
 
   private recieveStatement(): RecieveStmt {
+    const keyword = this.previous();
+
     const object = this.expression();
     this.consume(TokenType.FROM, "Expect 'FROM' after recieving object.");
 
     const sender = this.systemEntity();
     this.consume(TokenType.SEPARATOR, "Expect '\\n' after sender.");
 
-    return new RecieveStmt(object, sender);
+    return new RecieveStmt(keyword, object, sender);
   }
 
   private returnStatement(): ReturnStmt {
@@ -640,6 +675,11 @@ export default class Parser {
 
     const end = this.consume(TokenType.RIGHT_BRACE, "Expect '}' after record expression.");
 
+    fields.forEach((f) => {
+      if (fields.find((field) => field !== f && field.lexeme === f.lexeme))
+        this.error(f, `Duplicate fields '${f.lexeme}'.`);
+    });
+
     return new RecordExpr(start, fields, values, end);
   }
 
@@ -664,6 +704,8 @@ export default class Parser {
     if (token.type === TokenType.ARRAY) {
       this.consume(TokenType.OF, "Expect 'OF' after array type expression.");
       return new ArrayTypeExpr(Type.ARRAY, this.typeExpression());
+    } else if (token.type === TokenType.IDENTIFIER) {
+      return new IdentifierTypeExpr(Type.IDENTIFER, token);
     } else {
       const tokenName = TokenType[token.type];
       const type: Type = Type[tokenName as unknown as number] as any as Type;
@@ -714,6 +756,11 @@ export default class Parser {
     }
 
     if (required && parameters.length === 0) this.error(this.previous(), "Parameter list cannot be empty.");
+
+    parameters.forEach((p) => {
+      if (parameters.find((para) => para !== p && para.name.lexeme === p.name.lexeme))
+        this.error(p.name, `Duplicate parameters '${p.name.lexeme}'.`);
+    });
 
     this.match(TokenType.SEPARATOR);
 

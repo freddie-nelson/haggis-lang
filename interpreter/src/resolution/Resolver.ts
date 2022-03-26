@@ -38,6 +38,7 @@ import {
   RecieveStmt,
   SendStmt,
 } from "../ast/Stmt";
+import { IdentifierTypeExpr, Type, TypeExpr } from "../ast/TypeExpr";
 import Haggis from "../Haggis";
 import Interpreter from "../runtime/Interpreter";
 import Token from "../scanning/Token";
@@ -112,12 +113,12 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     this.currentClass = ClassType.CLASS;
 
     if (stmt.superclass) {
-      if (stmt.name.lexeme === stmt.superclass.lexeme)
-        Haggis.error(stmt.superclass, "A class can't inherit from itself.");
+      if (stmt.name.lexeme === stmt.superclass.identifier.lexeme)
+        Haggis.error(stmt.superclass.identifier, "A class can't inherit from itself.");
 
       this.currentClass = ClassType.DERIVED;
 
-      this.resolve(new VariableExpr(stmt.superclass));
+      this.resolveLocal(stmt.superclass, stmt.superclass.identifier);
 
       this.beginScope();
       this.scopes[this.scopes.length - 1].set("SUPER", VariableState.USED);
@@ -161,6 +162,11 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
   visitVarStmt(stmt: VarStmt) {
     this.declare(stmt.name);
     this.resolve(stmt.initializer);
+
+    if (stmt.type?.type === Type.IDENTIFER) {
+      this.resolveLocal(stmt.type, (<IdentifierTypeExpr>stmt.type).identifier);
+    }
+
     this.define(stmt.name);
   }
 
@@ -372,7 +378,15 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
   }
 
   private resolveFunction(func: FunctionStmt | ProcedureStmt, type: FunctionType) {
-    if (this.scopes.length > 0) Haggis.error(func.name, `Function/Procedure declared in local scope.`);
+    if (
+      this.scopes.length > 0 &&
+      !(
+        type === FunctionType.INITIALIZER ||
+        type === FunctionType.METHOD_FUNCTION ||
+        type === FunctionType.METHOD_PROCEDURE
+      )
+    )
+      Haggis.error(func.name, `Function/Procedure declared in local scope.`);
 
     const enclosingFunction = this.currentFunction;
     this.currentFunction = type;
@@ -437,7 +451,7 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     scope.set(name.lexeme, VariableState.DEFINED);
   }
 
-  private resolveLocal(expr: Expr, name: Token) {
+  private resolveLocal(expr: Expr | TypeExpr, name: Token) {
     for (let i = this.scopes.length - 1; i >= 0; i--) {
       if (this.scopes[i].has(name.lexeme)) {
         this.scopes[i].set(name.lexeme, VariableState.USED);
@@ -449,6 +463,7 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     if (this.global.has(name.lexeme)) {
       this.global.set(name.lexeme, VariableState.USED);
       // this.interpreter.resolve(expr, -1);
+      return;
     }
 
     Haggis.error(name, `Undefined variable '${name.lexeme}'.`);

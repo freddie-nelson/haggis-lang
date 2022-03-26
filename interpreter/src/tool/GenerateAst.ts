@@ -33,7 +33,7 @@ export default class GenerateAst {
 
     this.defineAst(outputDir, "Stmt", [
       "Record     :: name: Token, fields: Parameter[]",
-      "Class      :: name: Token, superclass: Token | undefined, fields: Parameter[], initializer: ProcedureStmt | undefined, methods: (FunctionStmt | ProcedureStmt)[], overrides: Map<ProcedureStmt | FunctionStmt\\, true>",
+      "Class      :: name: Token, superclass: IdentifierTypeExpr | undefined, fields: Parameter[], initializer: ProcedureStmt | undefined, methods: (FunctionStmt | ProcedureStmt)[], overrides: Map<ProcedureStmt | FunctionStmt\\, true>",
 
       "Procedure  :: name: Token, params: Parameter[], body: Stmt[]",
       "Function   :: name: Token, params: Parameter[], returnType: TypeExpr, body: Stmt[]",
@@ -41,22 +41,22 @@ export default class GenerateAst {
       "Var        :: name: Token, type: TypeExpr | undefined, initializer: Expr",
       "RecieveVar :: name: Token, type: TypeExpr | undefined, sender: Token | Expr",
 
-      "If         :: condition: Expr, thenBranch: Stmt[], elseBranch: Stmt[] | undefined",
+      "If         :: keyword: Token, condition: Expr, thenBranch: Stmt[], elseBranch: Stmt[] | undefined",
 
-      "While      :: condition: Expr, body: Stmt[]",
-      "Until      :: body: Stmt[], condition: Expr",
+      "While      :: keyword: Token, condition: Expr, body: Stmt[]",
+      "Until      :: keyword: Token, body: Stmt[], condition: Expr",
 
-      "For        :: counter: Token, lower: Expr, upper: Expr, step: Expr, body: Stmt[]",
-      "ForEach    :: iterator: Token, object: Expr, body: Stmt[]",
+      "For        :: keyword: Token, counter: Token, lower: Expr, upper: Expr, step: Expr, body: Stmt[]",
+      "ForEach    :: keyword: Token, iterator: Token, object: Expr, body: Stmt[]",
 
-      "Set        :: object: Expr, value: Expr",
+      "Set        :: keyword: Token, object: Expr, value: Expr",
 
       "Create     :: keyword: Token, file: Expr",
       "Open       :: keyword: Token, file: Expr",
       "Close      :: keyword: Token, file: Expr",
 
-      "Send       :: value: Expr, dest: Token | Expr",
-      "Recieve    :: object: Expr, sender: Token | Expr",
+      "Send       :: keyword: Token, value: Expr, dest: Token | Expr",
+      "Recieve    :: keyword: Token, object: Expr, sender: Token | Expr",
 
       "Return     :: keyword: Token, value: Expr | undefined",
 
@@ -69,7 +69,7 @@ export default class GenerateAst {
     const data = `
     import Parameter from "./Parameter"
     import Token from "../scanning/Token";
-    import { Type, TypeExpr } from "./TypeExpr";
+    import { Type, TypeExpr, IdentifierTypeExpr } from "./TypeExpr";
     ${baseName !== "Expr" ? 'import { Expr, VariableExpr } from "./Expr"' : ""};
     ${baseName !== "Stmt" ? 'import { Stmt } from "./Stmt"' : ""};
 

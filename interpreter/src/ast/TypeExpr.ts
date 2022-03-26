@@ -1,4 +1,6 @@
 import ImplementationError from "../parsing/ImplementationError";
+import Token from "../scanning/Token";
+import { Expr } from "./Expr";
 import Parameter from "./Parameter";
 import { ClassStmt, FunctionStmt, ProcedureStmt } from "./Stmt";
 
@@ -30,6 +32,16 @@ export class TypeExpr {
 
   constructor(type: Type) {
     this.type = type;
+  }
+}
+
+export class IdentifierTypeExpr extends TypeExpr {
+  readonly identifier: Token;
+
+  constructor(type: Type, identifier: Token) {
+    super(type);
+
+    this.identifier = identifier;
   }
 }
 
@@ -127,6 +139,15 @@ export class ClassTypeExpr extends TypeExpr {
     }
   }
 
+  isSuperOf(t: ClassTypeExpr): boolean {
+    let superclass = t.superclass;
+    while (superclass) {
+      if (this === superclass) return true;
+    }
+
+    return false;
+  }
+
   hasField(name: string): boolean {
     return this.fields.has(name) || this.superclass?.hasField(name);
   }
@@ -175,7 +196,7 @@ export class ClassInstanceTypeExpr extends TypeExpr {
 export class FunctionTypeExpr extends TypeExpr {
   readonly name: string;
   readonly params: TypeExpr[];
-  readonly returnType?: TypeExpr;
+  readonly returnType: TypeExpr;
 
   constructor(
     name: string,
@@ -192,7 +213,7 @@ export class FunctionTypeExpr extends TypeExpr {
     else if (type === Type.PROCEDURE && returnType)
       throw new ImplementationError("Return type provided to FunctionTypeExpr but is a Type.PROCEDURE.");
 
-    if (!returnType) this.returnType = new TypeExpr(Type.VOID);
+    if (!returnType) returnType = new TypeExpr(Type.VOID);
 
     this.params = params.map((p) => p.type);
     this.returnType = returnType;
@@ -200,7 +221,8 @@ export class FunctionTypeExpr extends TypeExpr {
 
   matchSignatures(type: FunctionTypeExpr) {
     let returnTypesMatch = this.returnType === type.returnType;
-    if (this.returnType) returnTypesMatch = matchTypeExpr(this.returnType, type.returnType);
+    if (this.returnType && type.returnType)
+      returnTypesMatch = matchTypeExpr(this.returnType, type.returnType);
 
     return this.type === type.type && returnTypesMatch && this.matchParams(type.params);
   }
@@ -230,6 +252,47 @@ export function matchTypes(t1: Type, t2: Type) {
   return t1 === t2;
 }
 
+/**
+ * Determines wether or not two {@link TypeExpr} match.
+ *
+ * @param t1 The first type (the object being set/declared)
+ * @param t2 The second type (the type of the value)
+ * @returns true or false
+ */
 export function matchTypeExpr(t1: TypeExpr, t2: TypeExpr): boolean {
-  return true;
+  if (t1 instanceof ArrayTypeExpr) {
+    if (!(t2 instanceof ArrayTypeExpr)) return false;
+
+    return matchTypeExpr(t1.itemType, t2.itemType);
+  }
+
+  if (t1 instanceof RecordTypeExpr) {
+    return t1 === t2;
+  }
+
+  if (t1 instanceof RecordInstanceTypeExpr) {
+    if (!(t2 instanceof RecordInstanceTypeExpr)) return false;
+
+    return t1.record === t2.record;
+  }
+
+  if (t1 instanceof ClassTypeExpr) {
+    return t1 === t2;
+  }
+
+  if (t1 instanceof ClassInstanceTypeExpr) {
+    if (!(t2 instanceof ClassInstanceTypeExpr)) return false;
+
+    if (t1.klass === t2.klass) return true;
+
+    return t1.klass.isSuperOf(t2.klass);
+  }
+
+  if (t1 instanceof FunctionTypeExpr) {
+    if (!(t2 instanceof FunctionTypeExpr)) return false;
+
+    return t1.matchSignatures(t2);
+  }
+
+  return t1.type === t2.type;
 }

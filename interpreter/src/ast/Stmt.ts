@@ -1,7 +1,7 @@
 
     import Parameter from "./Parameter"
     import Token from "../scanning/Token";
-    import { Type, TypeExpr } from "./TypeExpr";
+    import { Type, TypeExpr, IdentifierTypeExpr } from "./TypeExpr";
     import { Expr, VariableExpr } from "./Expr";
     ;
 
@@ -53,13 +53,13 @@ this.fields = fields;
     
       export class ClassStmt extends Stmt {
         readonly name: Token;
-readonly superclass: Token | undefined;
+readonly superclass: IdentifierTypeExpr | undefined;
 readonly fields: Parameter[];
 readonly initializer: ProcedureStmt | undefined;
 readonly methods: (FunctionStmt | ProcedureStmt)[];
 readonly overrides: Map<ProcedureStmt | FunctionStmt,true>;
 
-        constructor(name: Token,superclass: Token | undefined,fields: Parameter[],initializer: ProcedureStmt | undefined,methods: (FunctionStmt | ProcedureStmt)[],overrides: Map<ProcedureStmt | FunctionStmt,true>) {
+        constructor(name: Token,superclass: IdentifierTypeExpr | undefined,fields: Parameter[],initializer: ProcedureStmt | undefined,methods: (FunctionStmt | ProcedureStmt)[],overrides: Map<ProcedureStmt | FunctionStmt,true>) {
           super();
           this.name = name;
 this.superclass = superclass;
@@ -150,13 +150,15 @@ this.sender = sender;
       }
     
       export class IfStmt extends Stmt {
-        readonly condition: Expr;
+        readonly keyword: Token;
+readonly condition: Expr;
 readonly thenBranch: Stmt[];
 readonly elseBranch: Stmt[] | undefined;
 
-        constructor(condition: Expr,thenBranch: Stmt[],elseBranch: Stmt[] | undefined) {
+        constructor(keyword: Token,condition: Expr,thenBranch: Stmt[],elseBranch: Stmt[] | undefined) {
           super();
-          this.condition = condition;
+          this.keyword = keyword;
+this.condition = condition;
 this.thenBranch = thenBranch;
 this.elseBranch = elseBranch;
 
@@ -168,12 +170,14 @@ this.elseBranch = elseBranch;
       }
     
       export class WhileStmt extends Stmt {
-        readonly condition: Expr;
+        readonly keyword: Token;
+readonly condition: Expr;
 readonly body: Stmt[];
 
-        constructor(condition: Expr,body: Stmt[]) {
+        constructor(keyword: Token,condition: Expr,body: Stmt[]) {
           super();
-          this.condition = condition;
+          this.keyword = keyword;
+this.condition = condition;
 this.body = body;
 
         }
@@ -184,12 +188,14 @@ this.body = body;
       }
     
       export class UntilStmt extends Stmt {
-        readonly body: Stmt[];
+        readonly keyword: Token;
+readonly body: Stmt[];
 readonly condition: Expr;
 
-        constructor(body: Stmt[],condition: Expr) {
+        constructor(keyword: Token,body: Stmt[],condition: Expr) {
           super();
-          this.body = body;
+          this.keyword = keyword;
+this.body = body;
 this.condition = condition;
 
         }
@@ -200,15 +206,17 @@ this.condition = condition;
       }
     
       export class ForStmt extends Stmt {
-        readonly counter: Token;
+        readonly keyword: Token;
+readonly counter: Token;
 readonly lower: Expr;
 readonly upper: Expr;
 readonly step: Expr;
 readonly body: Stmt[];
 
-        constructor(counter: Token,lower: Expr,upper: Expr,step: Expr,body: Stmt[]) {
+        constructor(keyword: Token,counter: Token,lower: Expr,upper: Expr,step: Expr,body: Stmt[]) {
           super();
-          this.counter = counter;
+          this.keyword = keyword;
+this.counter = counter;
 this.lower = lower;
 this.upper = upper;
 this.step = step;
@@ -222,13 +230,15 @@ this.body = body;
       }
     
       export class ForEachStmt extends Stmt {
-        readonly iterator: Token;
+        readonly keyword: Token;
+readonly iterator: Token;
 readonly object: Expr;
 readonly body: Stmt[];
 
-        constructor(iterator: Token,object: Expr,body: Stmt[]) {
+        constructor(keyword: Token,iterator: Token,object: Expr,body: Stmt[]) {
           super();
-          this.iterator = iterator;
+          this.keyword = keyword;
+this.iterator = iterator;
 this.object = object;
 this.body = body;
 
@@ -240,12 +250,14 @@ this.body = body;
       }
     
       export class SetStmt extends Stmt {
-        readonly object: Expr;
+        readonly keyword: Token;
+readonly object: Expr;
 readonly value: Expr;
 
-        constructor(object: Expr,value: Expr) {
+        constructor(keyword: Token,object: Expr,value: Expr) {
           super();
-          this.object = object;
+          this.keyword = keyword;
+this.object = object;
 this.value = value;
 
         }
@@ -304,12 +316,14 @@ this.file = file;
       }
     
       export class SendStmt extends Stmt {
-        readonly value: Expr;
+        readonly keyword: Token;
+readonly value: Expr;
 readonly dest: Token | Expr;
 
-        constructor(value: Expr,dest: Token | Expr) {
+        constructor(keyword: Token,value: Expr,dest: Token | Expr) {
           super();
-          this.value = value;
+          this.keyword = keyword;
+this.value = value;
 this.dest = dest;
 
         }
@@ -320,12 +334,14 @@ this.dest = dest;
       }
     
       export class RecieveStmt extends Stmt {
-        readonly object: Expr;
+        readonly keyword: Token;
+readonly object: Expr;
 readonly sender: Token | Expr;
 
-        constructor(object: Expr,sender: Token | Expr) {
+        constructor(keyword: Token,object: Expr,sender: Token | Expr) {
           super();
-          this.object = object;
+          this.keyword = keyword;
+this.object = object;
 this.sender = sender;
 
         }

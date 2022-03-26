@@ -1,3 +1,4 @@
+import { DESTRUCTION } from "dns";
 import {
   Visitor as ExprVisitor,
   Expr,
@@ -16,12 +17,35 @@ import {
   VariableExpr,
 } from "../ast/Expr";
 import Parameter from "../ast/Parameter";
-import { ReturnStmt, Stmt, VarStmt, Visitor as StmtVisitor } from "../ast/Stmt";
+import {
+  ClassStmt,
+  CloseStmt,
+  CreateStmt,
+  ExpressionStmt,
+  ForEachStmt,
+  ForStmt,
+  FunctionStmt,
+  IfStmt,
+  OpenStmt,
+  ProcedureStmt,
+  RecieveStmt,
+  RecieveVarStmt,
+  RecordStmt,
+  ReturnStmt,
+  SendStmt,
+  SetStmt,
+  Stmt,
+  UntilStmt,
+  VarStmt,
+  Visitor as StmtVisitor,
+  WhileStmt,
+} from "../ast/Stmt";
 import {
   ArrayTypeExpr,
   ClassInstanceTypeExpr,
   ClassTypeExpr,
   FunctionTypeExpr,
+  IdentifierTypeExpr,
   matchTypeExpr,
   RecordInstanceTypeExpr,
   RecordTypeExpr,
@@ -33,10 +57,12 @@ import ImplementationError from "../parsing/ImplementationError";
 import Interpreter from "../runtime/Interpreter";
 import Token from "../scanning/Token";
 import { TokenType } from "../scanning/TokenType";
+import { InputEntities, OutputEntities } from "./SystemEntities";
+import TypeError from "./TypeError";
 
 export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<void> {
   private readonly interpreter: Interpreter;
-  private readonly locals: Map<Expr, number>;
+  private readonly locals: Map<Expr | TypeExpr, number>;
 
   private readonly global: Map<string, TypeExpr> = new Map();
 
@@ -48,185 +74,289 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
    */
   private readonly scopes: Map<string, TypeExpr>[] = [];
 
+  private currentFunction: FunctionTypeExpr;
+
   constructor(interpreter: Interpreter) {
     this.interpreter = interpreter;
     this.locals = interpreter.locals;
   }
 
-  visitRecordStmt(stmt: RecordStmt) {
-    if (this.scopes.length > 0) Haggis.error(stmt.name, "Record declared in local scope.");
+  typecheck(statements: Stmt[]) {
+    try {
+      this.check(statements);
+    } catch (error) {
+      if (error instanceof TypeError) {
+        return;
+      }
 
-    this.declare(stmt.name);
-    this.define(stmt.name);
+      throw error;
+    }
+  }
+
+  visitRecordStmt(stmt: RecordStmt) {
+    const type = new RecordTypeExpr(stmt.name.lexeme, stmt.fields);
+    this.declare(stmt.name, type);
   }
 
   visitClassStmt(stmt: ClassStmt) {
-    if (this.scopes.length > 0) Haggis.error(stmt.name, "Class declared in local scope.");
-
-    this.declare(stmt.name);
-    this.define(stmt.name);
-
-    const enclosingClass = this.currentClass;
-    this.currentClass = ClassType.CLASS;
-
+    let superclass: ClassTypeExpr;
     if (stmt.superclass) {
-      if (stmt.name.lexeme === stmt.superclass.lexeme)
-        Haggis.error(stmt.superclass, "A class can't inherit from itself.");
+      superclass = <ClassTypeExpr>this.resolveVariable(stmt.superclass.identifier, stmt.superclass);
+      if (!(superclass instanceof ClassTypeExpr))
+        this.error(
+          stmt.superclass.identifier,
+          `Superclass identifier '${stmt.superclass.identifier}' does not refer to a class.`
+        );
+    }
 
-      this.currentClass = ClassType.DERIVED;
+    const klass = new ClassTypeExpr(stmt, superclass);
+    this.declare(stmt.name, klass);
 
-      this.resolve(new VariableExpr(stmt.superclass));
+    stmt.fields.forEach((f) => {
+      if (superclass && superclass.hasField(f.name.lexeme))
+        this.error(f.name, `Sub and super class have duplicate fields '${f.name.lexeme}'.`);
+    });
 
+    if (superclass) {
       this.beginScope();
-      this.scopes[this.scopes.length - 1].set("SUPER", VariableState.USED);
+      this.scopes[this.scopes.length - 1].set("SUPER", superclass);
     }
 
     this.beginScope();
-    this.scopes[this.scopes.length - 1].set("THIS", VariableState.USED);
+    this.scopes[this.scopes.length - 1].set("THIS", new ClassInstanceTypeExpr(klass));
 
     if (stmt.initializer) {
-      this.resolveFunction(stmt.initializer, FunctionType.INITIALIZER);
+      this.check(stmt.initializer);
     }
 
     stmt.methods.forEach((m) => {
-      this.resolveFunction(m, FunctionType.METHOD);
+      if (m instanceof ProcedureStmt) {
+        const type = new FunctionTypeExpr(m.name.lexeme, Type.PROCEDURE, m.params);
+        this.checkFunction(m, type);
+      } else {
+        const type = new FunctionTypeExpr(m.name.lexeme, Type.FUNCTION, m.params, m.returnType);
+        this.checkFunction(m, type);
+      }
+    });
+
+    stmt.methods.forEach((m) => {
+      if (!superclass) return;
+
+      const isOverride = superclass.hasMethod(m.name.lexeme);
+
+      if (!isOverride && stmt.overrides.has(m))
+        this.error(m.name, `Method '${m.name.lexeme}' has no super method to override.`);
+
+      if (!isOverride) return;
+
+      const method = superclass.getMethod(m.name.lexeme);
+
+      if (!stmt.overrides.has(m))
+        this.error(m.name, `Method '${m.name.lexeme}' needs to be specified as an override method.`);
+
+      if (!method.matchSignatures(klass.getMethod(m.name.lexeme)))
+        this.error(m.name, `Method '${m.name.lexeme}' in sub and super do not have matching signatures.`);
     });
 
     this.endScope();
-
     if (stmt.superclass) this.endScope();
-
-    this.currentClass = enclosingClass;
   }
 
   visitProcedureStmt(stmt: ProcedureStmt) {
-    this.declare(stmt.name);
-    this.define(stmt.name);
+    const type = new FunctionTypeExpr(stmt.name.lexeme, Type.PROCEDURE, stmt.params);
 
-    this.resolveFunction(stmt, FunctionType.PROCEDURE);
+    this.declare(stmt.name, type);
+    this.checkFunction(stmt, type);
   }
 
   visitFunctionStmt(stmt: FunctionStmt) {
-    this.declare(stmt.name);
-    this.define(stmt.name);
+    const type = new FunctionTypeExpr(stmt.name.lexeme, Type.FUNCTION, stmt.params, stmt.returnType);
 
-    this.resolveFunction(stmt, FunctionType.FUNCTION);
+    this.declare(stmt.name, type);
+    this.checkFunction(stmt, type);
   }
 
   visitVarStmt(stmt: VarStmt) {
-    this.declare(stmt.name, stmt.type);
-    const type = this.type(stmt.initializer);
+    const initializer = this.type(stmt.initializer);
+    const type = this.variableType(stmt, initializer);
 
-    if (!this.match(stmt.type, type)) Haggis.error(stmt.name, "Variable and initializer type do not match.");
+    this.declare(stmt.name, type);
   }
 
   visitRecieveVarStmt(stmt: RecieveVarStmt) {
-    this.declare(stmt.name);
-    if (stmt.sender instanceof Expr) this.resolve(stmt.sender);
-    this.define(stmt.name);
+    let initializer: TypeExpr;
+    if (stmt.sender instanceof Expr) {
+      const sender = this.type(stmt.sender);
+      if (!this.isString(sender)) this.error(stmt.name, "Sender expression must be a string.");
+
+      initializer = new TypeExpr(Type.STRING);
+    } else {
+      const entity = InputEntities[stmt.sender.lexeme];
+      if (!entity) this.error(stmt.sender, `No input device by the name of '${stmt.sender.lexeme}' exists.`);
+
+      initializer = entity.type;
+    }
+
+    const type = this.variableType(stmt, initializer);
+    this.declare(stmt.name, type);
+  }
+
+  private variableType(stmt: VarStmt | RecieveVarStmt, initializer: TypeExpr) {
+    let type = stmt.type;
+    if (!stmt.type) type = initializer;
+
+    if (type.type === Type.IDENTIFER) {
+      const klassOrRecord = this.resolveVariable((<IdentifierTypeExpr>type).identifier, type);
+      if (!this.isObject(klassOrRecord))
+        this.error((<IdentifierTypeExpr>type).identifier, `Referenced user type is not a record or class.`);
+
+      if (klassOrRecord instanceof ClassTypeExpr) {
+        type = new ClassInstanceTypeExpr(klassOrRecord);
+      } else if (klassOrRecord instanceof RecordTypeExpr) {
+        type = new RecordInstanceTypeExpr(klassOrRecord);
+      } else {
+        // Unreachable
+        throw new ImplementationError("Referenced user type was not a ClassTypeExpr or RecordTypeExpr.");
+      }
+    }
+
+    if (!matchTypeExpr(type, initializer))
+      this.error(stmt.name, "Variable type and initializer type do not match.");
+
+    if (type.type === Type.FUNCTION || type.type === Type.PROCEDURE)
+      this.error(stmt.name, "Functions and procedures cannot be assigned to variables.");
+
+    if (type.type === Type.CLASS || type.type === Type.RECORD || type.type === Type.IDENTIFER)
+      this.error(stmt.name, "Record and class declarations cannot be assigned to variables.");
+
+    if (type.type === Type.VOID) this.error(stmt.name, "VOID cannot be assigned to a variable.");
+
+    return type;
   }
 
   visitExpressionStmt(stmt: ExpressionStmt) {
-    this.resolve(stmt.expression);
+    this.type(stmt.expression);
   }
 
   visitIfStmt(stmt: IfStmt) {
-    this.resolve(stmt.condition);
-    this.resolve(stmt.thenBranch);
-    if (stmt.elseBranch) this.resolve(stmt.elseBranch);
+    const condition = this.type(stmt.condition);
+    if (!this.isBoolean(condition)) this.error(stmt.keyword, "If condition is not a boolean.");
+
+    this.check(stmt.thenBranch);
+    if (stmt.elseBranch) this.check(stmt.elseBranch);
   }
 
   visitWhileStmt(stmt: WhileStmt) {
-    this.resolve(stmt.condition);
-
-    const enclosingLoop = this.currentLoop;
-    this.currentLoop = LoopType.WHILE;
+    const condition = this.type(stmt.condition);
+    if (!this.isBoolean(condition)) this.error(stmt.keyword, "Loop condition is not a boolean.");
 
     this.beginScope();
-    this.resolve(stmt.body);
+    this.check(stmt.body);
     this.endScope();
-
-    this.currentLoop = enclosingLoop;
   }
 
   visitUntilStmt(stmt: UntilStmt) {
-    const enclosingLoop = this.currentLoop;
-    this.currentLoop = LoopType.UNTIL;
-
     this.beginScope();
-    this.resolve(stmt.body);
+    this.check(stmt.body);
     this.endScope();
 
-    this.currentLoop = enclosingLoop;
-
-    this.resolve(stmt.condition);
+    const condition = this.type(stmt.condition);
+    if (!this.isBoolean(condition)) this.error(stmt.keyword, "Loop condition is not a boolean.");
   }
 
   visitForStmt(stmt: ForStmt) {
-    this.resolve(stmt.lower);
-    this.resolve(stmt.upper);
-    this.resolve(stmt.step);
+    const lower = this.type(stmt.lower);
+    const upper = this.type(stmt.upper);
+    const step = this.type(stmt.step);
+
+    if (!this.isNumber(lower)) this.error(stmt.keyword, "Expression for lower bound is not a number.");
+    if (!this.isNumber(upper)) this.error(stmt.keyword, "Expression for upper bound is not a number.");
+    if (!this.isNumber(step)) this.error(stmt.keyword, "Expression for step is not a number.");
 
     this.beginScope();
 
-    this.declare(stmt.counter);
-    this.define(stmt.counter);
+    let counterType = new TypeExpr(Type.INTEGER);
+    if (this.isReal(lower) || this.isReal(upper) || this.isReal(step)) counterType = new TypeExpr(Type.REAL);
 
-    const enclosingLoop = this.currentLoop;
-    this.currentLoop = LoopType.FOR;
+    this.declare(stmt.counter, counterType);
 
-    this.resolve(stmt.body);
+    this.check(stmt.body);
+
     this.endScope();
-
-    this.currentLoop = enclosingLoop;
   }
 
   visitForEachStmt(stmt: ForEachStmt) {
-    this.resolve(stmt.object);
+    const object = <ArrayTypeExpr>this.type(stmt.object);
+    if (!this.isArray(object)) this.error(stmt.keyword, "Object is not an array.");
 
     this.beginScope();
 
-    this.declare(stmt.iterator);
-    this.define(stmt.iterator);
+    this.declare(stmt.iterator, object.itemType);
 
-    const enclosingLoop = this.currentLoop;
-    this.currentLoop = LoopType.FOR_EACH;
+    this.check(stmt.body);
 
-    this.resolve(stmt.body);
     this.endScope();
-
-    this.currentLoop = enclosingLoop;
   }
 
   visitSetStmt(stmt: SetStmt) {
-    this.resolve(stmt.object);
-    this.resolve(stmt.value);
+    const object = this.type(stmt.object);
+    const value = this.type(stmt.value);
+
+    if (!matchTypeExpr(object, value))
+      this.error(stmt.keyword, "Assignment target and value type do not match.");
   }
 
   visitRecieveStmt(stmt: RecieveStmt) {
-    this.resolve(stmt.object);
-    if (stmt.sender instanceof Expr) this.resolve(stmt.sender);
+    const object = this.type(stmt.object);
+
+    if (stmt.sender instanceof Expr) {
+      const sender = this.type(stmt.sender);
+      if (!this.isString(sender)) this.error(stmt.keyword, "Sender expression must be a string.");
+      if (!this.isString(object)) this.error(stmt.keyword, "Receiving object must be a string.");
+    } else {
+      const entity = InputEntities[stmt.sender.lexeme];
+      if (!entity) this.error(stmt.sender, `No input device by the name of '${stmt.sender.lexeme}' exists.`);
+      if (!matchTypeExpr(entity.type, object))
+        this.error(stmt.sender, "The sender's output type and the receiving object's type do not match.");
+    }
   }
 
   visitSendStmt(stmt: SendStmt) {
-    this.resolve(stmt.value);
-    if (stmt.dest instanceof Expr) this.resolve(stmt.dest);
+    const value = this.type(stmt.value);
+
+    if (stmt.dest instanceof Expr) {
+      const dest = this.type(stmt.dest);
+      if (!this.isString(dest)) this.error(stmt.keyword, "Destination expression must be a string.");
+      if (!this.isString(value)) this.error(stmt.keyword, "Send value must be a string.");
+    } else {
+      const entity = OutputEntities[stmt.dest.lexeme];
+      if (!entity) this.error(stmt.dest, `No output device by the name of '${stmt.dest.lexeme}' exists.`);
+      if (!matchTypeExpr(entity.type, value))
+        this.error(stmt.dest, "The output device's input type and the value's type do not match.");
+    }
   }
 
   visitCreateStmt(stmt: CreateStmt) {
-    this.resolve(stmt.file);
+    const file = this.type(stmt.file);
+    if (!this.isString(file)) this.error(stmt.keyword, "File expression must be a string.");
   }
 
   visitOpenStmt(stmt: OpenStmt) {
-    this.resolve(stmt.file);
+    const file = this.type(stmt.file);
+    if (!this.isString(file)) this.error(stmt.keyword, "File expression must be a string.");
   }
 
   visitCloseStmt(stmt: CloseStmt) {
-    this.resolve(stmt.file);
+    const file = this.type(stmt.file);
+    if (!this.isString(file)) this.error(stmt.keyword, "File expression must be a string.");
   }
 
   visitReturnStmt(stmt: ReturnStmt) {
-    const type = this.type(stmt.value);
+    let type = new TypeExpr(Type.VOID);
+    if (stmt.value) type = this.type(stmt.value);
+
+    if (!matchTypeExpr(this.currentFunction.returnType, type))
+      this.error(stmt.keyword, "Return value does not match function's return type.");
   }
 
   visitVariableExpr(expr: VariableExpr) {
@@ -236,7 +366,7 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
   visitArrayExpr(expr: ArrayExpr) {
     const types = expr.items.map((v) => this.type(v));
     types.forEach((t) => {
-      if (!matchTypeExpr(t, types[0])) this.error(expr.startBracket, "Array item types do not match.");
+      if (!matchTypeExpr(types[0], t)) this.error(expr.startBracket, "Array item types do not match.");
     });
 
     return new ArrayTypeExpr(Type.ARRAY, types[0]);
@@ -277,7 +407,11 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
     switch (expr.operator.type) {
       case TokenType.EQUAL:
       case TokenType.NOT_EQUAL:
-        if (matchTypeExpr(left, right) || (this.isNumber(left) && this.isNumber(right)))
+        if (
+          matchTypeExpr(left, right) ||
+          matchTypeExpr(right, left) ||
+          (this.isNumber(left) && this.isNumber(right))
+        )
           return new TypeExpr(Type.BOOLEAN);
         else this.error(expr.operator, "Left and right expressions types do not match.");
         break;
@@ -312,6 +446,21 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
           this.error(expr.operator, "Left and right expressions are not integers.");
 
         return new TypeExpr(Type.INTEGER);
+      case TokenType.AMPERSAND:
+        if (this.isArray(left) || this.isArray(right)) {
+          if (!(this.isArray(left) && this.isArray(right)))
+            this.error(expr.operator, "Both operands must be arrays to perform array concatenation.");
+
+          if (!matchTypeExpr(left, right))
+            this.error(expr.operator, "Arrays must have matching types for concatenation.");
+
+          return left;
+        }
+
+        if (!this.isPrimitive(left) || !this.isPrimitive(right))
+          this.error(expr.operator, "Both operands must be primitive values for string concatenation.");
+
+        return new TypeExpr(Type.STRING);
       default:
         throw new ImplementationError("Binary operator not implemented in type checker.");
     }
@@ -414,11 +563,11 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
     return type;
   }
 
-  check(statements: Stmt[]): void;
+  private check(statements: Stmt[]): void;
 
-  check(statement: Stmt): void;
+  private check(statement: Stmt): void;
 
-  check(s: Stmt | Stmt[]): void {
+  private check(s: Stmt | Stmt[]): void {
     if (Array.isArray(s)) {
       s.forEach((s) => this.check(s));
     } else {
@@ -426,8 +575,19 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
     }
   }
 
-  type(e: Expr): TypeExpr {
+  private type(e: Expr): TypeExpr {
     return e.accept(this);
+  }
+
+  private checkFunction(stmt: FunctionStmt | ProcedureStmt, type: FunctionTypeExpr) {
+    this.currentFunction = type;
+    this.beginScope();
+
+    stmt.params.forEach((p) => this.declare(p.name, p.type));
+    this.check(stmt.body);
+
+    this.endScope();
+    this.currentFunction = undefined;
   }
 
   private beginScope() {
@@ -445,15 +605,18 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
     scope.set(name.lexeme, type);
   }
 
-  private resolveVariable(name: Token, expr: Expr): TypeExpr {
+  private resolveVariable(name: Token, expr: Expr | TypeExpr): TypeExpr {
     if (this.locals.has(expr)) {
       const distance = this.locals.get(expr);
       const scope = this.scopes[this.scopes.length - 1 - distance];
 
       return scope.get(name.lexeme);
-    } else {
+    } else if (this.global.has(name.lexeme)) {
       return this.global.get(name.lexeme);
     }
+
+    // Unreachable
+    throw new ImplementationError(`Unresolved variable '${name.lexeme}' in type checker.`);
   }
 
   private isBoolean(type: TypeExpr): boolean {
@@ -478,6 +641,10 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
 
   private isString(type: TypeExpr): boolean {
     return type.type === Type.STRING;
+  }
+
+  private isPrimitive(type: TypeExpr): boolean {
+    return this.isString(type) || this.isCharacter(type) || this.isNumber(type) || this.isBoolean(type);
   }
 
   private isArray(type: TypeExpr): boolean {

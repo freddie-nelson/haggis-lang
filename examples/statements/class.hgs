@@ -17,7 +17,7 @@ CLASS Child INHERITS Person WITH { STRING school }
   METHODS
 
   OVERRIDE FUNCTION getName() RETURNS STRING 
-    RETURN "child: " + THIS.name
+    RETURN "child: " & THIS.name
   END FUNCTION
 
   FUNCTION getSchool() RETURNS STRING

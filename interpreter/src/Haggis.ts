@@ -7,6 +7,7 @@ import RuntimeError from "./runtime/RuntimeError";
 import Scanner from "./scanning/Scanner";
 import Token from "./scanning/Token";
 import { TokenType } from "./scanning/TokenType";
+import TypeChecker from "./typechecker/TypeChecker";
 
 export default class Haggis {
   static readonly interpreter = new Interpreter();
@@ -80,6 +81,12 @@ export default class Haggis {
     resolver.resolve(statements);
 
     // stop if there was a resolution error
+    if (this.hadError) return;
+
+    const typechecker = new TypeChecker(this.interpreter);
+    typechecker.typecheck(statements);
+
+    // stop if there was a type error
     if (this.hadError) return;
 
     // this.interpreter.interpret(statements);
