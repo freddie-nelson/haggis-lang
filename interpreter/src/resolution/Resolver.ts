@@ -282,6 +282,7 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     if (stmt.value) {
       if (this.currentFunction === FunctionType.INITIALIZER)
         Haggis.error(stmt.keyword, "Can't return a value from an initializer.");
+
       if (
         this.currentFunction === FunctionType.PROCEDURE ||
         this.currentFunction === FunctionType.METHOD_PROCEDURE
@@ -316,10 +317,6 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     });
   }
 
-  visitIndexExpr(expr: IndexExpr) {
-    this.resolve(expr.index);
-  }
-
   visitBinaryExpr(expr: BinaryExpr) {
     this.resolve(expr.left);
     this.resolve(expr.right);
@@ -332,6 +329,11 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
 
   visitGetExpr(expr: GetExpr) {
     this.resolve(expr.object);
+  }
+
+  visitIndexExpr(expr: IndexExpr) {
+    this.resolve(expr.object);
+    this.resolve(expr.index);
   }
 
   visitThisExpr(expr: ThisExpr) {
