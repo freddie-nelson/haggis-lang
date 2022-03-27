@@ -17,13 +17,36 @@ import {
   UnaryExpr,
 } from "../ast/Expr";
 import Parameter from "../ast/Parameter";
-import { Visitor as StmtVisitor, Stmt, RecordStmt, ClassStmt, ProcedureStmt } from "../ast/Stmt";
+import {
+  Visitor as StmtVisitor,
+  Stmt,
+  RecordStmt,
+  ClassStmt,
+  ProcedureStmt,
+  FunctionStmt,
+  VarStmt,
+  RecieveVarStmt,
+  ExpressionStmt,
+  IfStmt,
+  WhileStmt,
+  UntilStmt,
+  ForStmt,
+  ForEachStmt,
+  SetStmt,
+  RecieveStmt,
+  SendStmt,
+  CreateStmt,
+  OpenStmt,
+  CloseStmt,
+  ReturnStmt,
+} from "../ast/Stmt";
 import { Type, TypeExpr } from "../ast/TypeExpr";
 import Haggis from "../Haggis";
 import ImplementationError from "../parsing/ImplementationError";
 import Token from "../scanning/Token";
 import { TokenType } from "../scanning/TokenType";
 import Environment from "./Environment";
+import ReturnError from "./ReturnError";
 import RuntimeError from "./RuntimeError";
 import HaggisArray from "./values/HaggisArray";
 import HaggisBoolean from "./values/HaggisBoolean";
@@ -31,8 +54,10 @@ import HaggisCallable from "./values/HaggisCallable";
 import HaggisCharacter from "./values/HaggisCharacter";
 import HaggisClass from "./values/HaggisClass";
 import HaggisClassInstance from "./values/HaggisClassInstance";
+import HaggisFunction from "./values/HaggisFunction";
 import HaggisInteger from "./values/HaggisInteger";
 import HaggisNumber from "./values/HaggisNumber";
+import { HaggisInstance } from "./values/HaggisObject";
 import HaggisReal from "./values/HaggisReal";
 import HaggisRecord from "./values/HaggisRecord";
 import HaggisRecordInstance from "./values/HaggisRecordInstance";
@@ -54,6 +79,163 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
     } catch (error) {
       Haggis.runtimeError(<RuntimeError>error);
     }
+  }
+
+  visitRecordStmt(stmt: RecordStmt) {
+    const record = new HaggisRecord(stmt.name.lexeme, stmt.fields);
+    this.environment.define(stmt.name.lexeme, record);
+  }
+
+  visitClassStmt(stmt: ClassStmt) {
+    let superclass = stmt.superclass
+      ? <HaggisClass>this.lookUpVariable(stmt.superclass.identifier, stmt.superclass)
+      : undefined;
+
+    this.environment.define(stmt.name.lexeme, new HaggisVoid());
+
+    if (superclass) {
+      this.environment = new Environment(this.environment);
+      this.environment.define("SUPER", superclass);
+    }
+
+    const klass = new HaggisClass(stmt, this.environment, superclass);
+
+    if (superclass) this.environment = this.environment.enclosing;
+
+    this.environment.assign(stmt.name, klass);
+  }
+
+  visitProcedureStmt(stmt: ProcedureStmt) {
+    const func = new HaggisFunction(stmt, this.environment);
+    this.environment.define(stmt.name.lexeme, func);
+  }
+
+  visitFunctionStmt(stmt: FunctionStmt) {
+    const func = new HaggisFunction(stmt, this.environment);
+    this.environment.define(stmt.name.lexeme, func);
+  }
+
+  visitVarStmt(stmt: VarStmt) {
+    const value = this.evaluate(stmt.initializer);
+    this.environment.define(stmt.name.lexeme, value);
+  }
+
+  visitRecieveVarStmt(stmt: RecieveVarStmt) {}
+
+  visitExpressionStmt(stmt: ExpressionStmt) {
+    this.evaluate(stmt.expression);
+  }
+
+  visitIfStmt(stmt: IfStmt) {
+    const enter = <HaggisBoolean>this.evaluate(stmt.condition);
+
+    if (enter.value) {
+      this.executeBlock(stmt.thenBranch, new Environment(this.environment));
+    } else {
+      this.executeBlock(stmt.elseBranch, new Environment(this.environment));
+    }
+  }
+
+  visitWhileStmt(stmt: WhileStmt) {
+    while ((<HaggisBoolean>this.evaluate(stmt.condition)).value) {
+      this.executeBlock(stmt.body, new Environment(this.environment));
+    }
+  }
+
+  visitUntilStmt(stmt: UntilStmt) {
+    do {
+      this.executeBlock(stmt.body, new Environment(this.environment));
+    } while (!(<HaggisBoolean>this.evaluate(stmt.condition)).value);
+  }
+
+  visitForStmt(stmt: ForStmt) {
+    const lower = <HaggisNumber>this.evaluate(stmt.lower);
+    const upper = <HaggisNumber>this.evaluate(stmt.upper);
+    const step = <HaggisNumber>this.evaluate(stmt.step);
+
+    let counter: HaggisNumber;
+    if (lower.type === Type.REAL || upper.type === Type.REAL || step.type === Type.REAL)
+      counter = new HaggisReal(lower.value);
+    else counter = new HaggisInteger(lower.value);
+
+    this.environment = new Environment(this.environment);
+    this.environment.define(stmt.counter.lexeme, counter);
+
+    while (true) {
+      if (step.value >= 0) {
+        if (counter.value > upper.value) break;
+      } else {
+        if (counter.value < upper.value) break;
+      }
+
+      this.executeBlock(stmt.body, this.environment);
+
+      this.environment.assign(
+        stmt.counter,
+        counter.type === Type.REAL
+          ? new HaggisReal(counter.value + step.value)
+          : new HaggisInteger(counter.value + step.value)
+      );
+    }
+
+    this.environment = this.environment.enclosing;
+  }
+
+  visitForEachStmt(stmt: ForEachStmt) {
+    const object = <HaggisArray>this.evaluate(stmt.object);
+
+    this.environment = new Environment(this.environment);
+    this.environment.define(stmt.iterator.lexeme, new HaggisVoid());
+
+    const len = object.length().value;
+    for (let i = 0; i < len; i++) {
+      this.environment.assign(stmt.iterator, object.get(new HaggisInteger(i)));
+
+      this.executeBlock(stmt.body, this.environment);
+    }
+
+    this.environment = this.environment.enclosing;
+  }
+
+  visitSetStmt(stmt: SetStmt) {
+    const value = this.evaluate(stmt.value);
+
+    if (stmt.object instanceof GetExpr) {
+      const object = <HaggisInstance>this.evaluate(stmt.object.object);
+      object.set(stmt.object.name.lexeme, value);
+    } else if (stmt.object instanceof IndexExpr) {
+      const object = <HaggisArray>this.evaluate(stmt.object.object);
+      const index = <HaggisInteger>this.evaluate(stmt.object.index);
+      object.set(index, value);
+    } else {
+      const variable = <VariableExpr>stmt.object;
+
+      const distance = this.locals.get(stmt.object);
+      if (distance !== undefined) {
+        this.environment.assignAt(distance, variable.name, value);
+      } else {
+        this.globals.assign(variable.name, value);
+      }
+    }
+  }
+
+  visitRecieveStmt(stmt: RecieveStmt) {}
+
+  visitSendStmt(stmt: SendStmt) {}
+
+  visitCreateStmt(stmt: CreateStmt) {}
+
+  visitOpenStmt(stmt: OpenStmt) {}
+
+  visitCloseStmt(stmt: CloseStmt) {}
+
+  visitReturnStmt(stmt: ReturnStmt) {
+    const value = stmt.value ? this.evaluate(stmt.value) : new HaggisVoid();
+    throw new ReturnError(value);
+  }
+
+  visitVariableExpr(expr: VariableExpr) {
+    return this.lookUpVariable(expr.name, expr);
   }
 
   visitArrayExpr(expr: ArrayExpr) {

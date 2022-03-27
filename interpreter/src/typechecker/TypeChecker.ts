@@ -291,7 +291,8 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
 
   visitForEachStmt(stmt: ForEachStmt) {
     const object = <ArrayTypeExpr>this.type(stmt.object);
-    if (!this.isArray(object)) this.error(stmt.keyword, "Object is not an array.");
+    if (!this.isArray(object) && !this.isString(object))
+      this.error(stmt.keyword, "Object is not an array or string.");
 
     this.beginScope();
 
@@ -411,13 +412,15 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
 
   visitIndexExpr(expr: IndexExpr) {
     const type = this.type(expr.object);
-    if (!this.isArray(type)) this.error(expr.bracket, "Object cannot be indexed.");
+    if (!this.isArray(type) && !this.isString(type)) this.error(expr.bracket, "Object cannot be indexed.");
 
     const index = this.type(expr.index);
     if (!this.isInteger(index)) this.error(expr.bracket, "Index expression must be an integer.");
 
     if (type instanceof ArrayTypeExpr) {
       return type.itemType;
+    } else if (this.isString(type)) {
+      return new TypeExpr(Type.CHARACTER);
     }
 
     // Unreachable
@@ -461,13 +464,13 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
       case TokenType.SLASH:
       case TokenType.CARET:
         if (!this.isNumber(left) || !this.isNumber(right))
-          this.error(expr.operator, "Left and right expressions are not numbers.");
+          this.error(expr.operator, "Left and right expressions must be numbers.");
 
         if (this.isReal(left) || this.isReal(right)) return new TypeExpr(Type.REAL);
         else return new TypeExpr(Type.INTEGER);
       case TokenType.MOD:
         if (!this.isInteger(left) || !this.isInteger(right))
-          this.error(expr.operator, "Left and right expressions are not integers.");
+          this.error(expr.operator, "Left and right expressions must be integers.");
 
         return new TypeExpr(Type.INTEGER);
       case TokenType.AMPERSAND:
