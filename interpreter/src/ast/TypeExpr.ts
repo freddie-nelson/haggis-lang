@@ -149,27 +149,27 @@ export class ClassTypeExpr extends TypeExpr {
   }
 
   hasField(name: string): boolean {
-    return this.fields.has(name) || this.superclass?.hasField(name);
+    return this.fields.has(name) ?? this.superclass?.hasField(name);
   }
 
   getField(name: string): TypeExpr {
-    return this.fields.get(name) || this.superclass?.getField(name);
+    return this.fields.get(name) ?? this.superclass?.getField(name);
   }
 
   hasMethod(name: string): boolean {
-    return this.methods.has(name) || this.superclass?.hasMethod(name);
+    return this.methods.has(name) ?? this.superclass?.hasMethod(name);
   }
 
   getMethod(name: string): FunctionTypeExpr {
-    return this.methods.get(name) || this.superclass?.getMethod(name);
+    return this.methods.get(name) ?? this.superclass?.getMethod(name);
   }
 
   hasProperty(name: string): boolean {
-    return this.hasField(name) || this.hasMethod(name);
+    return this.hasField(name) ?? this.hasMethod(name);
   }
 
   getProperty(name: string): TypeExpr {
-    return this.getField(name) || this.getMethod(name);
+    return this.getField(name) ?? this.getMethod(name);
   }
 }
 
@@ -273,7 +273,17 @@ export function matchTypeExpr(t1: TypeExpr, t2: TypeExpr): boolean {
   if (t1 instanceof RecordInstanceTypeExpr) {
     if (!(t2 instanceof RecordInstanceTypeExpr)) return false;
 
-    return t1.record === t2.record;
+    if (t1.record === t2.record) return true;
+
+    if (t1.record.fields.size === t2.record.fields.size) {
+      for (const f of t1.record.fields) {
+        if (!t2.record.hasField(f[0]) || f[1] !== t2.record.getField(f[0])) return false;
+      }
+
+      return true;
+    }
+
+    return false;
   }
 
   if (t1 instanceof ClassTypeExpr) {

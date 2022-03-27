@@ -1,37 +1,21 @@
 import Token from "../scanning/Token";
 import RuntimeError from "./RuntimeError";
+import HaggisValue from "./values/HaggisValue";
 
 export default class Environment {
   readonly enclosing?: Environment;
 
-  readonly values = new Map<string, Object>();
-
-  /**
-   * Map of variables in environment which have not been assigned a value yet.
-   *
-   * This means they had no initial value when defined (no initializer) and have not been assigned yet.
-   *
-   * This is used to issue a runtime error when a variable which has not been initialized or assigned to is accessed
-   * in a variable expression.
-   */
-  private readonly nonAssignedVariables = new Map<string, boolean>();
+  readonly values = new Map<string, HaggisValue>();
 
   constructor(enclosing?: Environment) {
     this.enclosing = enclosing;
   }
 
-  define(name: string, value: Object) {
+  define(name: string, value: HaggisValue) {
     this.values.set(name, value);
-
-    if (value === null) {
-      this.nonAssignedVariables.set(name, true);
-    }
   }
 
-  get(name: Token): Object {
-    if (this.nonAssignedVariables.has(name.lexeme))
-      throw new RuntimeError(name, `Accessing uninitialized variable '${name.lexeme}'.`);
-
+  get(name: Token): HaggisValue {
     if (this.values.has(name.lexeme)) return this.values.get(name.lexeme);
 
     if (this.enclosing) return this.enclosing.get(name);
@@ -43,10 +27,8 @@ export default class Environment {
     return this.ancestor(distance).get(name);
   }
 
-  assign(name: Token, value: Object): void {
+  assign(name: Token, value: HaggisValue): void {
     if (this.values.has(name.lexeme)) {
-      if (this.nonAssignedVariables.has(name.lexeme)) this.nonAssignedVariables.delete(name.lexeme);
-
       this.values.set(name.lexeme, value);
       return;
     }
@@ -56,7 +38,7 @@ export default class Environment {
     throw new RuntimeError(name, `Undefined variable '${name.lexeme}'.`);
   }
 
-  assignAt(distance: number, name: Token, value: Object) {
+  assignAt(distance: number, name: Token, value: HaggisValue) {
     this.ancestor(distance).assign(name, value);
   }
 

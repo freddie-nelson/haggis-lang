@@ -74,6 +74,7 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
    */
   private readonly scopes: Map<string, TypeExpr>[] = [];
 
+  private currentClass: ClassTypeExpr;
   private currentFunction: FunctionTypeExpr;
 
   constructor(interpreter: Interpreter) {
@@ -111,6 +112,7 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
 
     const klass = new ClassTypeExpr(stmt, superclass);
     this.declare(stmt.name, klass);
+    this.currentClass = klass;
 
     stmt.fields.forEach((f) => {
       if (superclass && superclass.hasField(f.name.lexeme))
@@ -160,6 +162,8 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
 
     this.endScope();
     if (stmt.superclass) this.endScope();
+
+    this.currentClass = undefined;
   }
 
   visitProcedureStmt(stmt: ProcedureStmt) {
@@ -302,12 +306,32 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
     const object = this.type(stmt.object);
     const value = this.type(stmt.value);
 
+    if (object.type === Type.CLASS || object.type === Type.RECORD)
+      this.error(stmt.keyword, "Cannot assign to a record or class declaration.");
+
+    if (
+      this.currentClass &&
+      object.type === Type.CLASS_INSTANCE &&
+      object === this.resolveVariable(new Token(TokenType.IDENTIFIER, "THIS", undefined, -1, -1), stmt.object)
+    )
+      this.error(stmt.keyword, "Cannot assign to 'THIS'.");
+
     if (!matchTypeExpr(object, value))
       this.error(stmt.keyword, "Assignment target and value type do not match.");
   }
 
   visitRecieveStmt(stmt: RecieveStmt) {
     const object = this.type(stmt.object);
+
+    if (object.type === Type.CLASS || object.type === Type.RECORD)
+      this.error(stmt.keyword, "Cannot assign to a record or class declaration.");
+
+    if (
+      this.currentClass &&
+      object.type === Type.CLASS_INSTANCE &&
+      object === this.resolveVariable(new Token(TokenType.IDENTIFIER, "THIS", undefined, -1, -1), stmt.object)
+    )
+      this.error(stmt.keyword, "Cannot assign to 'THIS'.");
 
     if (stmt.sender instanceof Expr) {
       const sender = this.type(stmt.sender);
@@ -447,18 +471,12 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
 
         return new TypeExpr(Type.INTEGER);
       case TokenType.AMPERSAND:
-        if (this.isArray(left) || this.isArray(right)) {
-          if (!(this.isArray(left) && this.isArray(right)))
-            this.error(expr.operator, "Both operands must be arrays to perform array concatenation.");
-
+        if (this.isArray(left) && this.isArray(right)) {
           if (!matchTypeExpr(left, right))
             this.error(expr.operator, "Arrays must have matching types for concatenation.");
 
           return left;
         }
-
-        if (!this.isPrimitive(left) || !this.isPrimitive(right))
-          this.error(expr.operator, "Both operands must be primitive values for string concatenation.");
 
         return new TypeExpr(Type.STRING);
       default:
@@ -503,10 +521,22 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
 
       return type.record.getField(expr.name.lexeme);
     } else if (type instanceof ClassInstanceTypeExpr) {
-      if (!type.klass.hasProperty(expr.name.lexeme))
-        this.error(expr.name, `Class instance does not contain the property '${expr.name.lexeme}'.`);
+      const klass = type.klass;
+      const prop = expr.name.lexeme;
 
-      return type.klass.getProperty(expr.name.lexeme);
+      if (!klass.hasProperty(prop))
+        this.error(expr.name, `Class instance does not contain the property '${prop}'.`);
+
+      if (this.currentClass) {
+        if (type.klass.isSuperOf(this.currentClass) || type.klass === this.currentClass) {
+          return klass.getProperty(prop);
+        }
+      }
+
+      if (klass.hasField(prop))
+        this.error(expr.name, `Field '${prop}' cannot be accessed from the current scope.`);
+
+      return klass.getMethod(prop);
     }
 
     // Unreachable

@@ -1,7 +1,9 @@
-export default class ReturnError extends Error {
-  readonly value: Object;
+import HaggisValue from "./values/HaggisValue";
 
-  constructor(value: Object) {
+export default class ReturnError extends Error {
+  readonly value: HaggisValue;
+
+  constructor(value: HaggisValue) {
     super();
 
     this.value = value;
