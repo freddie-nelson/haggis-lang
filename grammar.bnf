@@ -20,7 +20,7 @@ procDecl          = "PROCEDURE" procedure "END" "PROCEDURE" SEPARATOR? ;
 funcDecl          = "FUNCTION" function "END" "FUNCTION" SEPARATOR? ;
 
 declaration       = varDecl | statement ;
-varDecl           = "DECLARE" IDENTIFER ( "AS" TYPE_DECL )? "INITIALLY" ( ( "FROM" SYS_ENTITY ) | expression ) SEPARATOR ;
+varDecl           = "DECLARE" ( IDENTIFER | ( "THIS" "." IDENTIFER ) ) ( "AS" TYPE_DECL )? "INITIALLY" ( ( "FROM" SYS_ENTITY ) | expression ) SEPARATOR ;
 
 
 # --------------- Statements --------------- 

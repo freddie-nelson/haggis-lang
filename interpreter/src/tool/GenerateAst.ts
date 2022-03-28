@@ -38,8 +38,8 @@ export default class GenerateAst {
       "Procedure  :: name: Token, params: Parameter[], body: Stmt[]",
       "Function   :: name: Token, params: Parameter[], returnType: TypeExpr, body: Stmt[]",
 
-      "Var        :: name: Token, type: TypeExpr | undefined, initializer: Expr",
-      "RecieveVar :: name: Token, type: TypeExpr | undefined, sender: Token | Expr",
+      "Var        :: name: Token | GetExpr, type: TypeExpr | undefined, initializer: Expr",
+      "RecieveVar :: name: Token | GetExpr, type: TypeExpr | undefined, sender: Token | Expr",
 
       "If         :: keyword: Token, condition: Expr, thenBranch: Stmt[], elseBranch: Stmt[] | undefined",
 
@@ -70,7 +70,7 @@ export default class GenerateAst {
     import Parameter from "./Parameter"
     import Token from "../scanning/Token";
     import { Type, TypeExpr, IdentifierTypeExpr } from "./TypeExpr";
-    ${baseName !== "Expr" ? 'import { Expr, VariableExpr } from "./Expr"' : ""};
+    ${baseName !== "Expr" ? 'import { Expr, VariableExpr, GetExpr } from "./Expr"' : ""};
     ${baseName !== "Stmt" ? 'import { Stmt } from "./Stmt"' : ""};
 
     export abstract class ${baseName} {

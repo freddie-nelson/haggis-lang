@@ -13,6 +13,7 @@ export interface FileHandler extends InputDevice<HaggisString>, OutputDevice<Hag
   create(file: HaggisString): Promise<void>;
   open(file: HaggisString): Promise<void>;
   close(file: HaggisString): Promise<void>;
+  closeAll(): Promise<void>;
 }
 
 export interface IODevices {

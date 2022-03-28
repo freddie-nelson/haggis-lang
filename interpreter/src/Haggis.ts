@@ -26,6 +26,8 @@ export default class Haggis {
       await this.runPrompt();
     }
 
+    await ioDevicesNode.fileHandler.closeAll();
+
     process.exit(0);
   }
 

@@ -63,6 +63,11 @@ export default <FileHandler>{
       );
     }
   },
+  async closeAll() {
+    for (const [path, file] of openFiles) {
+      await this.close(path);
+    }
+  },
 
   async send(value, dest) {
     if (!openFiles.has(dest))

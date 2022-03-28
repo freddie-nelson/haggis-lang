@@ -2,7 +2,7 @@
     import Parameter from "./Parameter"
     import Token from "../scanning/Token";
     import { Type, TypeExpr, IdentifierTypeExpr } from "./TypeExpr";
-    import { Expr, VariableExpr } from "./Expr";
+    import { Expr, VariableExpr, GetExpr } from "./Expr";
     ;
 
     export abstract class Stmt {
@@ -114,11 +114,11 @@ this.body = body;
       }
     
       export class VarStmt extends Stmt {
-        readonly name: Token;
+        readonly name: Token | GetExpr;
 readonly type: TypeExpr | undefined;
 readonly initializer: Expr;
 
-        constructor(name: Token,type: TypeExpr | undefined,initializer: Expr) {
+        constructor(name: Token | GetExpr,type: TypeExpr | undefined,initializer: Expr) {
           super();
           this.name = name;
 this.type = type;
@@ -132,11 +132,11 @@ this.initializer = initializer;
       }
     
       export class RecieveVarStmt extends Stmt {
-        readonly name: Token;
+        readonly name: Token | GetExpr;
 readonly type: TypeExpr | undefined;
 readonly sender: Token | Expr;
 
-        constructor(name: Token,type: TypeExpr | undefined,sender: Token | Expr) {
+        constructor(name: Token | GetExpr,type: TypeExpr | undefined,sender: Token | Expr) {
           super();
           this.name = name;
 this.type = type;

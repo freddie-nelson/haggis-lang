@@ -53,6 +53,8 @@ export default class Parser {
   }
 
   parse(): Stmt[] {
+    this.match(TokenType.SEPARATOR);
+
     const statements: Stmt[] = [];
     while (!this.isAtEnd()) {
       statements.push(this.globalDeclaration());
@@ -246,7 +248,14 @@ export default class Parser {
   // -------------------- DECLARATIONS --------------------
 
   private varDeclaration(): VarStmt | RecieveVarStmt {
-    const name = this.consume(TokenType.IDENTIFIER, "Expect variable name after 'DECLARE'.");
+    let name: Token | GetExpr;
+    if (this.match(TokenType.THIS)) {
+      const object = this.previous();
+      this.consume(TokenType.DOT, "Expect '.' after 'THIS'.");
+      name = new GetExpr(new ThisExpr(object), this.consume(TokenType.IDENTIFIER, "Expect field name."));
+    } else {
+      name = this.consume(TokenType.IDENTIFIER, "Expect variable name after 'DECLARE'.");
+    }
 
     let type: TypeExpr;
     if (this.match(TokenType.AS)) {

@@ -75,6 +75,8 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
   private readonly scopes: Map<string, TypeExpr>[] = [];
 
   private currentClass: ClassTypeExpr;
+  private declaredFields: Map<string, true>;
+
   private currentFunction: FunctionTypeExpr;
 
   constructor(interpreter: Interpreter) {
@@ -113,6 +115,7 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
     const klass = new ClassTypeExpr(stmt, superclass);
     this.declare(stmt.name, klass);
     this.currentClass = klass;
+    this.declaredFields = new Map();
 
     stmt.fields.forEach((f) => {
       if (superclass && superclass.hasField(f.name.lexeme))
@@ -127,8 +130,19 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
     this.beginScope();
     this.scopes[this.scopes.length - 1].set("THIS", new ClassInstanceTypeExpr(klass));
 
+    const allFields: Parameter[] = [...klass.fieldsArr];
+    let curr: ClassTypeExpr = klass.superclass;
+    while (curr) {
+      allFields.push(...curr.fieldsArr);
+      curr = curr.superclass;
+    }
+
     if (stmt.initializer) {
       this.check(stmt.initializer);
+    } else {
+      allFields.forEach((f) => {
+        this.declaredFields.set(f.name.lexeme, true);
+      });
     }
 
     stmt.methods.forEach((m) => {
@@ -163,7 +177,13 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
     this.endScope();
     if (stmt.superclass) this.endScope();
 
+    allFields.forEach((f) => {
+      if (!this.declaredFields.has(f.name.lexeme))
+        this.error(f.name, "Class constructor must declare all class fields.");
+    });
+
     this.currentClass = undefined;
+    this.declaredFields = undefined;
   }
 
   visitProcedureStmt(stmt: ProcedureStmt) {
@@ -184,14 +204,18 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
     const initializer = this.type(stmt.initializer);
     const type = this.variableType(stmt, initializer);
 
-    this.declare(stmt.name, type);
+    if (stmt.name instanceof Token) {
+      this.declare(stmt.name, type);
+    }
   }
 
   visitRecieveVarStmt(stmt: RecieveVarStmt) {
+    const token = stmt.name instanceof GetExpr ? stmt.name.name : stmt.name;
+
     let initializer: TypeExpr;
     if (stmt.sender instanceof Expr) {
       const sender = this.type(stmt.sender);
-      if (!this.isString(sender)) this.error(stmt.name, "Sender expression must be a string.");
+      if (!this.isString(sender)) this.error(token, "Sender expression must be a string.");
 
       initializer = new TypeExpr(Type.STRING);
     } else {
@@ -202,12 +226,19 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
     }
 
     const type = this.variableType(stmt, initializer);
-    this.declare(stmt.name, type);
+    if (stmt.name instanceof Token) {
+      this.declare(stmt.name, type);
+    }
   }
 
   private variableType(stmt: VarStmt | RecieveVarStmt, initializer: TypeExpr) {
     let type = stmt.type;
     if (!stmt.type) type = initializer;
+
+    if (stmt.name instanceof GetExpr) {
+      type = this.type(stmt.name);
+      this.declaredFields.set(stmt.name.name.lexeme, true);
+    }
 
     if (type.type === Type.IDENTIFER) {
       const klassOrRecord = this.resolveVariable((<IdentifierTypeExpr>type).identifier, type);
@@ -224,16 +255,18 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
       }
     }
 
+    const token = stmt.name instanceof GetExpr ? stmt.name.name : stmt.name;
+
     if (!matchTypeExpr(type, initializer))
-      this.error(stmt.name, "Variable type and initializer type do not match.");
+      this.error(token, "Variable type and initializer type do not match.");
 
     if (type.type === Type.FUNCTION || type.type === Type.PROCEDURE)
-      this.error(stmt.name, "Functions and procedures cannot be assigned to variables.");
+      this.error(token, "Functions and procedures cannot be assigned to variables.");
 
     if (type.type === Type.CLASS || type.type === Type.RECORD || type.type === Type.IDENTIFER)
-      this.error(stmt.name, "Record and class declarations cannot be assigned to variables.");
+      this.error(token, "Record and class declarations cannot be assigned to variables.");
 
-    if (type.type === Type.VOID) this.error(stmt.name, "VOID cannot be assigned to a variable.");
+    if (type.type === Type.VOID) this.error(token, "VOID cannot be assigned to a variable.");
 
     return type;
   }

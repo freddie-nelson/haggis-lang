@@ -1,1 +1,2 @@
-OPEN "open.hgs"
+OPEN "test.txt"
+CLOSE "test.txt"

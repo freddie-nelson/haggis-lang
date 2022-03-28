@@ -159,20 +159,37 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
   }
 
   visitVarStmt(stmt: VarStmt) {
-    this.declare(stmt.name);
+    const isThisDeclaration = stmt.name instanceof GetExpr;
+    if (isThisDeclaration) {
+      this.resolve(stmt.name.object);
+    } else {
+      this.declare(stmt.name);
+    }
+
     this.resolve(stmt.initializer);
 
     if (stmt.type?.type === Type.IDENTIFER) {
       this.resolveLocal(stmt.type, (<IdentifierTypeExpr>stmt.type).identifier);
     }
 
-    this.define(stmt.name);
+    if (!isThisDeclaration) {
+      this.define(stmt.name);
+    }
   }
 
   visitRecieveVarStmt(stmt: RecieveVarStmt) {
-    this.declare(stmt.name);
+    const isThisDeclaration = stmt.name instanceof GetExpr;
+    if (isThisDeclaration) {
+      this.resolve(stmt.name.object);
+    } else {
+      this.declare(stmt.name);
+    }
+
     if (stmt.sender instanceof Expr) this.resolve(stmt.sender);
-    this.define(stmt.name);
+
+    if (!isThisDeclaration) {
+      this.define(stmt.name);
+    }
   }
 
   visitExpressionStmt(stmt: ExpressionStmt) {

@@ -131,18 +131,30 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
   }
 
   visitVarStmt(stmt: VarStmt) {
-    const value = this.evaluate(stmt.initializer).copy();
-    this.environment.define(stmt.name.lexeme, value);
+    if (stmt.name instanceof GetExpr) {
+      const set = new SetStmt(stmt.name.name, stmt.name, stmt.initializer);
+      this.execute(set);
+    } else {
+      const value = this.evaluate(stmt.initializer).copy();
+      this.environment.define(stmt.name.lexeme, value);
+    }
   }
 
   async visitRecieveVarStmt(stmt: RecieveVarStmt) {
-    if (stmt.sender instanceof Expr) {
-      const sender = <HaggisString>this.evaluate(stmt.sender);
-      const value = await this.io.fileHandler.recieve(sender.jsString());
-      this.environment.define(stmt.name.lexeme, value);
+    if (stmt.name instanceof GetExpr) {
+      const set = new RecieveStmt(stmt.name.name, stmt.name, stmt.sender);
+      this.execute(set);
     } else {
-      const device = <InputDevice<HaggisValue>>this.io[stmt.sender.lexeme];
-      const value = await device.recieve(stmt.sender.lexeme);
+      let value: HaggisValue;
+
+      if (stmt.sender instanceof Expr) {
+        const sender = <HaggisString>this.evaluate(stmt.sender);
+        value = await this.io.fileHandler.recieve(sender.jsString());
+      } else {
+        const device = <InputDevice<HaggisValue>>this.io[stmt.sender.lexeme];
+        value = await device.recieve(stmt.sender.lexeme);
+      }
+
       this.environment.define(stmt.name.lexeme, value);
     }
   }
