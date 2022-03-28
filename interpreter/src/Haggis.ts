@@ -16,22 +16,22 @@ export default class Haggis {
   static hadError = false;
   static hadRuntimeError = false;
 
-  static main(args: string[]) {
+  static async main(args: string[]) {
     if (args.length > 1) {
       console.log("Usage: haggis [script]");
       process.exit(64);
     } else if (args.length == 1) {
-      this.runFile(args[0]);
+      await this.runFile(args[0]);
     } else {
-      this.runPrompt();
+      await this.runPrompt();
     }
 
     process.exit(0);
   }
 
-  private static runFile(path: string) {
+  private static async runFile(path: string) {
     const file = readFileSync(path).toString();
-    this.run(file);
+    await this.run(file);
 
     // indicate an error in the exit code
     if (this.hadError) process.exit(65);
@@ -47,7 +47,7 @@ export default class Haggis {
       process.stdout.write("> ");
 
       const proceed = await new Promise((resolve) => {
-        reader.on("line", (line) => {
+        reader.on("line", async (line) => {
           if (line === null) {
             reader.close();
             resolve(false);
@@ -58,7 +58,7 @@ export default class Haggis {
           //   line = `print ${line};`;
           // }
 
-          this.run(line);
+          await this.run(line);
           this.hadError = false;
           resolve(true);
         });
@@ -70,7 +70,9 @@ export default class Haggis {
     }
   }
 
-  private static run(source: string) {
+  private static async run(source: string) {
+    source += "\n";
+
     const scanner = new Scanner(source);
     const tokens: Token[] = scanner.scanTokens();
 
@@ -92,7 +94,7 @@ export default class Haggis {
     // stop if there was a type error
     if (this.hadError) return;
 
-    this.interpreter.interpret(statements);
+    await this.interpreter.interpret(statements);
   }
 
   static error(token: Token, message: string) {

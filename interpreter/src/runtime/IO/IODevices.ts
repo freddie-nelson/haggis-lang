@@ -2,17 +2,17 @@ import HaggisString from "../values/HaggisString";
 import HaggisValue from "../values/HaggisValue";
 
 export interface InputDevice<T extends HaggisValue> {
-  recieve(): Promise<T>;
+  recieve(sender: string): Promise<T>;
 }
 
 export interface OutputDevice<T extends HaggisValue> {
-  send(value: T): Promise<void>;
+  send(value: T, dest: string): Promise<void>;
 }
 
 export interface FileHandler extends InputDevice<HaggisString>, OutputDevice<HaggisString> {
-  create(value: HaggisString): Promise<void>;
-  open(value: HaggisString): Promise<void>;
-  close(value: HaggisString): Promise<void>;
+  create(file: HaggisString): Promise<void>;
+  open(file: HaggisString): Promise<void>;
+  close(file: HaggisString): Promise<void>;
 }
 
 export interface IODevices {

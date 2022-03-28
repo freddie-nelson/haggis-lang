@@ -75,17 +75,20 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
     this.io = io;
   }
 
-  interpret(statements: Stmt[]) {
+  async interpret(statements: Stmt[]) {
     try {
       const timer = performance.now();
 
       for (const s of statements) {
-        this.execute(s);
+        await this.execute(s);
       }
 
-      this.io.DISPLAY.send(new HaggisString(""));
+      this.io.DISPLAY.send(new HaggisString(""), "DISPLAY");
       this.io.DISPLAY.send(
-        new HaggisString(`Finished executing in ${String((performance.now() - timer) / 1000).substr(0, 6)}s.`)
+        new HaggisString(
+          `Finished executing in ${String((performance.now() - timer) / 1000).substr(0, 6)}s.`
+        ),
+        "DISPLAY"
       );
     } catch (error) {
       if (error instanceof RuntimeError) Haggis.runtimeError(error);
@@ -134,9 +137,12 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
 
   async visitRecieveVarStmt(stmt: RecieveVarStmt) {
     if (stmt.sender instanceof Expr) {
+      const sender = <HaggisString>this.evaluate(stmt.sender);
+      const value = await this.io.fileHandler.recieve(sender.jsString());
+      this.environment.define(stmt.name.lexeme, value);
     } else {
       const device = <InputDevice<HaggisValue>>this.io[stmt.sender.lexeme];
-      const value = await device.recieve();
+      const value = await device.recieve(stmt.sender.lexeme);
       this.environment.define(stmt.name.lexeme, value);
     }
   }
@@ -225,9 +231,12 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
 
   async visitRecieveStmt(stmt: RecieveStmt) {
     if (stmt.sender instanceof Expr) {
+      const sender = <HaggisString>this.evaluate(stmt.sender);
+      const value = await this.io.fileHandler.recieve(sender.jsString());
+      this.setObject(stmt.object, value.copy());
     } else {
       const device = <InputDevice<HaggisValue>>this.io[stmt.sender.lexeme];
-      const value = await device.recieve();
+      const value = await device.recieve(stmt.sender.lexeme);
       this.setObject(stmt.object, value.copy());
     }
   }
@@ -259,17 +268,28 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
     const value = this.evaluate(stmt.value);
 
     if (stmt.dest instanceof Expr) {
+      const dest = <HaggisString>this.evaluate(stmt.dest);
+      await this.io.fileHandler.send(<HaggisString>value, dest.jsString());
     } else {
       const dest = <OutputDevice<HaggisValue>>this.io[stmt.dest.lexeme];
-      await dest.send(value);
+      await dest.send(value, stmt.dest.lexeme);
     }
   }
 
-  visitCreateStmt(stmt: CreateStmt) {}
+  visitCreateStmt(stmt: CreateStmt) {
+    const file = <HaggisString>this.evaluate(stmt.file);
+    this.io.fileHandler.create(file);
+  }
 
-  visitOpenStmt(stmt: OpenStmt) {}
+  visitOpenStmt(stmt: OpenStmt) {
+    const file = <HaggisString>this.evaluate(stmt.file);
+    this.io.fileHandler.open(file);
+  }
 
-  visitCloseStmt(stmt: CloseStmt) {}
+  visitCloseStmt(stmt: CloseStmt) {
+    const file = <HaggisString>this.evaluate(stmt.file);
+    this.io.fileHandler.close(file);
+  }
 
   visitReturnStmt(stmt: ReturnStmt) {
     const value = stmt.value ? this.evaluate(stmt.value) : new HaggisVoid();
