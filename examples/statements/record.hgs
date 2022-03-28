@@ -2,3 +2,6 @@ RECORD Person IS {
   STRING name,
   INTEGER age
 }
+
+DECLARE freddie INITIALLY Person("Freddie", 17)
+SEND freddie & "" TO DISPLAY

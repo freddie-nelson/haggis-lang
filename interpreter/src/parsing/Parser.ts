@@ -70,7 +70,7 @@ export default class Parser {
 
       return this.declaration();
     } catch (error) {
-      if (!(error instanceof SyntaxError)) console.log(error);
+      if (!(error instanceof SyntaxError)) throw new ImplementationError(error.message);
       this.synchronize();
       return null;
     }
@@ -435,6 +435,10 @@ export default class Parser {
 
     const sender = this.systemEntity();
     this.consume(TokenType.SEPARATOR, "Expect '\\n' after sender.");
+
+    if (!(object instanceof VariableExpr) && !(object instanceof GetExpr) && !(object instanceof IndexExpr)) {
+      this.error(keyword, "Invalid assignment target.");
+    }
 
     return new RecieveStmt(keyword, object, sender);
   }

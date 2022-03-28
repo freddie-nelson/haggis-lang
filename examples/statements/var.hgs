@@ -1,3 +1,5 @@
 DECLARE foo AS STRING INITIALLY "Hello World!"
-
 DECLARE bar AS ARRAY OF INTEGER INITIALLY [ 1, 2, 3 ]
+
+SEND "foo: " & foo TO DISPLAY
+SEND "bar: " & bar TO DISPLAY

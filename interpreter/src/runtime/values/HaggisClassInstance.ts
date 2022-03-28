@@ -47,9 +47,9 @@ export default class HaggisClassInstance extends HaggisValue {
 
   toString() {
     return new HaggisString(
-      `${this.klass.name} { 
-        ${Array.from(this.fields).map(([f, v]) => `${f} = ${v.toString().jsString()}`)} 
-      }`
+      `${this.klass.name}{ ${Array.from(this.fields)
+        .map(([f, v]) => `${f} = ${v.toString().jsString()}`)
+        .join(", ")} }`
     );
   }
 }

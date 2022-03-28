@@ -3,6 +3,7 @@ import { createInterface } from "readline";
 import Parser from "./parsing/Parser";
 import Resolver from "./resolution/Resolver";
 import Interpreter from "./runtime/Interpreter";
+import ioDevicesNode from "./runtime/IO/node/devices";
 import RuntimeError from "./runtime/RuntimeError";
 import Scanner from "./scanning/Scanner";
 import Token from "./scanning/Token";
@@ -10,7 +11,7 @@ import { TokenType } from "./scanning/TokenType";
 import TypeChecker from "./typechecker/TypeChecker";
 
 export default class Haggis {
-  static readonly interpreter = new Interpreter();
+  static readonly interpreter = new Interpreter(ioDevicesNode);
 
   static hadError = false;
   static hadRuntimeError = false;
@@ -24,6 +25,8 @@ export default class Haggis {
     } else {
       this.runPrompt();
     }
+
+    process.exit(0);
   }
 
   private static runFile(path: string) {
@@ -89,7 +92,7 @@ export default class Haggis {
     // stop if there was a type error
     if (this.hadError) return;
 
-    // this.interpreter.interpret(statements);
+    this.interpreter.interpret(statements);
   }
 
   static error(token: Token, message: string) {

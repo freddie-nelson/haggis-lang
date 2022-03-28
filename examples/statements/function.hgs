@@ -1,6 +1,6 @@
 FUNCTION foo(INTEGER bar, REAL foobar) RETURNS REAL
-  SEND "adding " & foo & " and " & foobar & "together." TO DISPLAY
-  RETURN foo + foobar 
+  SEND "adding " & bar & " and " & foobar & " together." TO DISPLAY
+  RETURN bar + foobar 
 END FUNCTION
 
-foo(10, 5.5)
+SEND "result: " & foo(10, 5.5) TO DISPLAY

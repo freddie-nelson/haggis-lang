@@ -1,4 +1,3 @@
-import { INSPECT_MAX_BYTES } from "buffer";
 import {
   Visitor as ExprVisitor,
   Expr,
@@ -16,7 +15,6 @@ import {
   BinaryExpr,
   UnaryExpr,
 } from "../ast/Expr";
-import Parameter from "../ast/Parameter";
 import {
   Visitor as StmtVisitor,
   Stmt,
@@ -46,6 +44,7 @@ import ImplementationError from "../parsing/ImplementationError";
 import Token from "../scanning/Token";
 import { TokenType } from "../scanning/TokenType";
 import Environment from "./Environment";
+import { InputDevice, IODevices, OutputDevice } from "./IO/IODevices";
 import ReturnError from "./ReturnError";
 import RuntimeError from "./RuntimeError";
 import HaggisArray from "./values/HaggisArray";
@@ -70,14 +69,27 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
   readonly locals: Map<Expr | TypeExpr, number> = new Map();
 
   private environment = this.globals;
+  private io: IODevices;
+
+  constructor(io: IODevices) {
+    this.io = io;
+  }
 
   interpret(statements: Stmt[]) {
     try {
+      const timer = performance.now();
+
       for (const s of statements) {
         this.execute(s);
       }
+
+      this.io.DISPLAY.send(new HaggisString(""));
+      this.io.DISPLAY.send(
+        new HaggisString(`Finished executing in ${String((performance.now() - timer) / 1000).substr(0, 6)}s.`)
+      );
     } catch (error) {
-      Haggis.runtimeError(<RuntimeError>error);
+      if (error instanceof RuntimeError) Haggis.runtimeError(error);
+      else throw error;
     }
   }
 
@@ -116,11 +128,18 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
   }
 
   visitVarStmt(stmt: VarStmt) {
-    const value = this.evaluate(stmt.initializer);
+    const value = this.evaluate(stmt.initializer).copy();
     this.environment.define(stmt.name.lexeme, value);
   }
 
-  visitRecieveVarStmt(stmt: RecieveVarStmt) {}
+  async visitRecieveVarStmt(stmt: RecieveVarStmt) {
+    if (stmt.sender instanceof Expr) {
+    } else {
+      const device = <InputDevice<HaggisValue>>this.io[stmt.sender.lexeme];
+      const value = await device.recieve();
+      this.environment.define(stmt.name.lexeme, value);
+    }
+  }
 
   visitExpressionStmt(stmt: ExpressionStmt) {
     this.evaluate(stmt.expression);
@@ -149,9 +168,9 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
   }
 
   visitForStmt(stmt: ForStmt) {
-    const lower = <HaggisNumber>this.evaluate(stmt.lower);
-    const upper = <HaggisNumber>this.evaluate(stmt.upper);
-    const step = <HaggisNumber>this.evaluate(stmt.step);
+    const lower = <HaggisNumber>this.evaluate(stmt.lower).copy();
+    const upper = <HaggisNumber>this.evaluate(stmt.upper).copy();
+    const step = <HaggisNumber>this.evaluate(stmt.step).copy();
 
     let counter: HaggisNumber;
     if (lower.type === Type.REAL || upper.type === Type.REAL || step.type === Type.REAL)
@@ -162,6 +181,8 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
     this.environment.define(stmt.counter.lexeme, counter);
 
     while (true) {
+      counter = <HaggisNumber>this.environment.get(stmt.counter);
+
       if (step.value >= 0) {
         if (counter.value > upper.value) break;
       } else {
@@ -189,7 +210,7 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
 
     const len = object.length().value;
     for (let i = 0; i < len; i++) {
-      this.environment.assign(stmt.iterator, object.get(new HaggisInteger(i)));
+      this.environment.assign(stmt.iterator, object.get(new HaggisInteger(i)).copy());
 
       this.executeBlock(stmt.body, this.environment);
     }
@@ -198,30 +219,51 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
   }
 
   visitSetStmt(stmt: SetStmt) {
-    const value = this.evaluate(stmt.value);
+    const value = this.evaluate(stmt.value).copy();
+    this.setObject(stmt.object, value);
+  }
 
-    if (stmt.object instanceof GetExpr) {
-      const object = <HaggisInstance>this.evaluate(stmt.object.object);
-      object.set(stmt.object.name.lexeme, value);
-    } else if (stmt.object instanceof IndexExpr) {
-      const object = <HaggisArray>this.evaluate(stmt.object.object);
-      const index = <HaggisInteger>this.evaluate(stmt.object.index);
-      object.set(index, value);
+  async visitRecieveStmt(stmt: RecieveStmt) {
+    if (stmt.sender instanceof Expr) {
     } else {
-      const variable = <VariableExpr>stmt.object;
-
-      const distance = this.locals.get(stmt.object);
-      if (distance !== undefined) {
-        this.environment.assignAt(distance, variable.name, value);
-      } else {
-        this.globals.assign(variable.name, value);
-      }
+      const device = <InputDevice<HaggisValue>>this.io[stmt.sender.lexeme];
+      const value = await device.recieve();
+      this.setObject(stmt.object, value.copy());
     }
   }
 
-  visitRecieveStmt(stmt: RecieveStmt) {}
+  private setObject(object: Expr, value: HaggisValue) {
+    if (object instanceof GetExpr) {
+      const instance = <HaggisInstance>this.evaluate(object.object);
+      instance.set(object.name.lexeme, value);
+      return;
+    } else if (object instanceof IndexExpr) {
+      const array = <HaggisArray>this.evaluate(object.object);
+      const index = <HaggisInteger>this.evaluate(object.index);
+      array.set(index, value);
+      return;
+    } else if (object instanceof VariableExpr) {
+      const distance = this.locals.get(object);
+      if (distance !== undefined) {
+        this.environment.assignAt(distance, object.name, value);
+      } else {
+        this.globals.assign(object.name, value);
+      }
+      return;
+    }
 
-  visitSendStmt(stmt: SendStmt) {}
+    throw new ImplementationError("Invalid assignment target during runtime.");
+  }
+
+  async visitSendStmt(stmt: SendStmt) {
+    const value = this.evaluate(stmt.value);
+
+    if (stmt.dest instanceof Expr) {
+    } else {
+      const dest = <OutputDevice<HaggisValue>>this.io[stmt.dest.lexeme];
+      await dest.send(value);
+    }
+  }
 
   visitCreateStmt(stmt: CreateStmt) {}
 
@@ -239,14 +281,14 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
   }
 
   visitArrayExpr(expr: ArrayExpr) {
-    const items = expr.items.map((item) => this.evaluate(item));
+    const items = expr.items.map((item) => this.evaluate(item).copy());
     return new HaggisArray(items);
   }
 
   visitRecordExpr(expr: RecordExpr) {
     const fields: Map<string, HaggisValue> = new Map();
     expr.fields.forEach((f, i) => {
-      const value = this.evaluate(expr.values[i]);
+      const value = this.evaluate(expr.values[i]).copy();
       fields.set(f.lexeme, value);
     });
 
@@ -262,7 +304,7 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
 
   visitCallExpr(expr: CallExpr) {
     const func = <HaggisCallable>(<any>this.evaluate(expr.callee));
-    const args = expr.args.map((a) => this.evaluate(a));
+    const args = expr.args.map((a) => this.evaluate(a).copy());
 
     return func.call(this, args);
   }

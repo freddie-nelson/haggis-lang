@@ -531,7 +531,7 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
         this.error(expr.name, `Class instance does not contain the property '${prop}'.`);
 
       if (this.currentClass) {
-        if (type.klass.isSuperOf(this.currentClass) || type.klass === this.currentClass) {
+        if (klass.isSuperOf(this.currentClass) || klass === this.currentClass) {
           return klass.getProperty(prop);
         }
       }
@@ -556,7 +556,7 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
       throw new ImplementationError("Super is not an instance of ClassTypeExpr.");
 
     if (!superclass.hasMethod(expr.method.lexeme))
-      this.error(expr.method, `Method '${expr.method.lexeme}' does not exist '${superclass.name}'.`);
+      this.error(expr.method, `Method '${expr.method.lexeme}' does not exist on '${superclass.name}'.`);
 
     return superclass.getMethod(expr.method.lexeme);
   }

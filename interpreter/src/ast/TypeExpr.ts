@@ -143,13 +143,14 @@ export class ClassTypeExpr extends TypeExpr {
     let superclass = t.superclass;
     while (superclass) {
       if (this === superclass) return true;
+      superclass = superclass.superclass;
     }
 
     return false;
   }
 
   hasField(name: string): boolean {
-    return this.fields.has(name) ?? this.superclass?.hasField(name);
+    return this.fields.has(name) || this.superclass?.hasField(name);
   }
 
   getField(name: string): TypeExpr {
@@ -157,7 +158,7 @@ export class ClassTypeExpr extends TypeExpr {
   }
 
   hasMethod(name: string): boolean {
-    return this.methods.has(name) ?? this.superclass?.hasMethod(name);
+    return this.methods.has(name) || this.superclass?.hasMethod(name);
   }
 
   getMethod(name: string): FunctionTypeExpr {
@@ -165,7 +166,7 @@ export class ClassTypeExpr extends TypeExpr {
   }
 
   hasProperty(name: string): boolean {
-    return this.hasField(name) ?? this.hasMethod(name);
+    return this.hasField(name) || this.hasMethod(name);
   }
 
   getProperty(name: string): TypeExpr {

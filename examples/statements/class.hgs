@@ -17,7 +17,7 @@ CLASS Child INHERITS Person WITH { STRING school }
   METHODS
 
   OVERRIDE FUNCTION getName() RETURNS STRING 
-    RETURN "child: " & THIS.name
+    RETURN "child: " & THIS.name  
   END FUNCTION
 
   FUNCTION getSchool() RETURNS STRING
@@ -25,3 +25,9 @@ CLASS Child INHERITS Person WITH { STRING school }
   END FUNCTION
 
 END CLASS
+
+DECLARE p INITIALLY Person("Freddie", 17)
+DECLARE c INITIALLY Child("Freddie", 17, "St Nins")
+
+SEND p & "" TO DISPLAY
+SEND c & "" TO DISPLAY

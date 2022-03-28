@@ -45,7 +45,22 @@ export default class HaggisClass extends HaggisValue implements HaggisCallable {
     if (this.initializer) {
       this.initializer.bind(instance).call(interpreter, args);
     } else {
-      this.fieldsArr.forEach((f, i) => {
+      const chain = [];
+      let curr = this.superclass;
+
+      while (curr) {
+        chain.push(curr);
+        curr = curr.superclass;
+      }
+
+      const fields: Parameter[] = [];
+      while ((curr = chain.pop())) {
+        fields.push(...curr.fieldsArr);
+      }
+
+      fields.push(...this.fieldsArr);
+
+      fields.forEach((f, i) => {
         instance.set(f.name.lexeme, args[i]);
       });
     }

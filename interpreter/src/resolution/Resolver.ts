@@ -139,7 +139,6 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     });
 
     this.endScope();
-
     if (stmt.superclass) this.endScope();
 
     this.currentClass = enclosingClass;

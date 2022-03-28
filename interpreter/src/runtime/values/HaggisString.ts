@@ -1,13 +1,17 @@
-import HaggisArray from "./HaggisArray";
+import { Type } from "../../ast/TypeExpr";
+import HaggisValue from "./HaggisValue";
 import HaggisBoolean from "./HaggisBoolean";
 import HaggisCharacter from "./HaggisCharacter";
-import HaggisValue from "./HaggisValue";
+import HaggisArrayBase from "./HaggisArrayBase";
 
-export default class HaggisString extends HaggisArray {
+export default class HaggisString extends HaggisArrayBase implements HaggisValue {
+  readonly type: Type;
   protected readonly items: HaggisCharacter[];
 
   constructor(value: string) {
     super(value.split("").map((c) => new HaggisCharacter(c)));
+
+    this.type = Type.STRING;
   }
 
   copy() {
