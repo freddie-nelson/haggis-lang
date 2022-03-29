@@ -81,7 +81,7 @@ export default <FileHandler>{
       let data = readFileSync(file.fd, "utf-8");
       if (!data.endsWith("\n")) data += "\n";
 
-      data += value.jsString();
+      data += value.toString().jsString();
       writeFileSync(file.fd, data);
     } catch (error) {
       throw new RuntimeError(

@@ -387,7 +387,6 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
     if (stmt.dest instanceof Expr) {
       const dest = this.type(stmt.dest);
       if (!this.isString(dest)) this.error(stmt.keyword, "Destination expression must be a string.");
-      if (!this.isString(value)) this.error(stmt.keyword, "Send value must be a string.");
     } else {
       const entity = OutputEntities[stmt.dest.lexeme];
       if (!entity) this.error(stmt.dest, `No output device by the name of '${stmt.dest.lexeme}' exists.`);

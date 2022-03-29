@@ -1,23 +1,35 @@
 import Parameter from "../ast/Parameter";
-import { FunctionTypeExpr, GenericTypeExpr, Type, TypeExpr } from "../ast/TypeExpr";
+import { FunctionTypeExpr, GenericPrimitiveTypeExpr, Type, TypeExpr } from "../ast/TypeExpr";
 import Interpreter from "../runtime/Interpreter";
-import HaggisArray from "../runtime/values/HaggisArray";
 import HaggisBoolean from "../runtime/values/HaggisBoolean";
 import HaggisCallable from "../runtime/values/HaggisCallable";
+import HaggisCharacter from "../runtime/values/HaggisCharacter";
+import HaggisNumber from "../runtime/values/HaggisNumber";
 import HaggisString from "../runtime/values/HaggisString";
 import HaggisValue from "../runtime/values/HaggisValue";
 import Token from "../scanning/Token";
 import { TokenType } from "../scanning/TokenType";
 import { NativeFunction } from "./NativeFunction";
 
-class LengthCallable extends HaggisCallable {
+class CBoolCallable extends HaggisCallable {
   constructor() {
     super(Type.FUNCTION);
   }
 
   call(interpreter: Interpreter, args: HaggisValue[]) {
-    const object = <HaggisArray | HaggisString>args[0];
-    return object.length();
+    const object = <HaggisBoolean | HaggisString | HaggisNumber | HaggisCharacter>args[0];
+
+    let boolean: boolean;
+    if (object instanceof HaggisString) {
+      const s = object.jsString();
+      if (s === "true") boolean = true;
+      else if (s === "false") boolean = false;
+      else boolean = true;
+    } else {
+      boolean = !!object.value;
+    }
+
+    return new HaggisBoolean(boolean);
   }
 
   copy() {
@@ -31,22 +43,22 @@ class LengthCallable extends HaggisCallable {
   }
 
   toString() {
-    return new HaggisString(`<NATIVE_FUNCTION Length>`);
+    return new HaggisString(`<NATIVE_FUNCTION CBool>`);
   }
 }
 
 export default new NativeFunction(
-  "Length",
-  new LengthCallable(),
+  "CBool",
+  new CBoolCallable(),
   new FunctionTypeExpr(
-    "Length",
+    "CBool",
     Type.FUNCTION,
     [
       new Parameter(
         new Token(TokenType.IDENTIFIER, "object", undefined, -1, -1),
-        new GenericTypeExpr(Type.STRING, Type.ARRAY)
+        new GenericPrimitiveTypeExpr()
       ),
     ],
-    new TypeExpr(Type.INTEGER)
+    new TypeExpr(Type.BOOLEAN)
   )
 );

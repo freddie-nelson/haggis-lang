@@ -1,7 +1,6 @@
 import Parameter from "../ast/Parameter";
-import { FunctionTypeExpr, GenericTypeExpr, Type, TypeExpr } from "../ast/TypeExpr";
+import { FunctionTypeExpr, GenericAllTypeExpr, Type, TypeExpr } from "../ast/TypeExpr";
 import Interpreter from "../runtime/Interpreter";
-import HaggisArray from "../runtime/values/HaggisArray";
 import HaggisBoolean from "../runtime/values/HaggisBoolean";
 import HaggisCallable from "../runtime/values/HaggisCallable";
 import HaggisString from "../runtime/values/HaggisString";
@@ -10,14 +9,13 @@ import Token from "../scanning/Token";
 import { TokenType } from "../scanning/TokenType";
 import { NativeFunction } from "./NativeFunction";
 
-class LengthCallable extends HaggisCallable {
+class CStrCallable extends HaggisCallable {
   constructor() {
     super(Type.FUNCTION);
   }
 
   call(interpreter: Interpreter, args: HaggisValue[]) {
-    const object = <HaggisArray | HaggisString>args[0];
-    return object.length();
+    return args[0].toString();
   }
 
   copy() {
@@ -31,22 +29,17 @@ class LengthCallable extends HaggisCallable {
   }
 
   toString() {
-    return new HaggisString(`<NATIVE_FUNCTION Length>`);
+    return new HaggisString(`<NATIVE_FUNCTION CStr>`);
   }
 }
 
 export default new NativeFunction(
-  "Length",
-  new LengthCallable(),
+  "CStr",
+  new CStrCallable(),
   new FunctionTypeExpr(
-    "Length",
+    "CStr",
     Type.FUNCTION,
-    [
-      new Parameter(
-        new Token(TokenType.IDENTIFIER, "object", undefined, -1, -1),
-        new GenericTypeExpr(Type.STRING, Type.ARRAY)
-      ),
-    ],
-    new TypeExpr(Type.INTEGER)
+    [new Parameter(new Token(TokenType.IDENTIFIER, "object", undefined, -1, -1), new GenericAllTypeExpr())],
+    new TypeExpr(Type.STRING)
   )
 );

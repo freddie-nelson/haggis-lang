@@ -1,4 +1,4 @@
-import { Type, TypeExpr } from "../ast/TypeExpr";
+import { GenericAllTypeExpr, Type, TypeExpr } from "../ast/TypeExpr";
 
 export abstract class SystemEntity {
   readonly type: TypeExpr;
@@ -17,5 +17,5 @@ export const InputEntities: { [index: string]: InputEntity } = {
 };
 
 export const OutputEntities: { [index: string]: OutputEntity } = {
-  DISPLAY: new OutputEntity(new TypeExpr(Type.STRING)),
+  DISPLAY: new OutputEntity(new GenericAllTypeExpr()),
 };

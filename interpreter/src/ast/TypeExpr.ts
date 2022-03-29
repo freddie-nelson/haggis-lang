@@ -253,6 +253,32 @@ export class GenericTypeExpr extends TypeExpr {
   }
 }
 
+export class GenericPrimitiveTypeExpr extends GenericTypeExpr {
+  constructor() {
+    super(Type.INTEGER, Type.REAL, Type.CHARACTER, Type.BOOLEAN, Type.STRING);
+  }
+}
+
+export class GenericAllTypeExpr extends GenericTypeExpr {
+  constructor() {
+    super(
+      Type.INTEGER,
+      Type.REAL,
+      Type.CHARACTER,
+      Type.BOOLEAN,
+      Type.STRING,
+      Type.ARRAY,
+      Type.RECORD,
+      Type.CLASS,
+      Type.RECORD_INSTANCE,
+      Type.CLASS_INSTANCE,
+      Type.FUNCTION,
+      Type.PROCEDURE,
+      Type.VOID
+    );
+  }
+}
+
 /**
  * Determines wether or not two {@link TypeExpr} match.
  *

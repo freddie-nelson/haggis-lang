@@ -1,8 +1,8 @@
-import HaggisString from "../../values/HaggisString";
+import HaggisValue from "../../values/HaggisValue";
 import { OutputDevice } from "../IODevices";
 
-export default <OutputDevice<HaggisString>>{
+export default <OutputDevice<HaggisValue>>{
   async send(value) {
-    console.log(value.jsString());
+    console.log(value.toString().jsString());
   },
 };
