@@ -49,7 +49,7 @@ const keywords: { [index: string]: TokenType } = {
   OPEN: TokenType.OPEN,
   CLOSE: TokenType.CLOSE,
   SEND: TokenType.SEND,
-  RECIEVE: TokenType.RECIEVE,
+  RECEIVE: TokenType.RECEIVE,
   RETURN: TokenType.RETURN,
   END: TokenType.END,
 };

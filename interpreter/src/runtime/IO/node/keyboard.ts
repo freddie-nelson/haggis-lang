@@ -7,17 +7,15 @@ const reader = createInterface({
 });
 
 export default <InputDevice<HaggisString>>{
-  async recieve(): Promise<HaggisString> {
-    const input: string = await new Promise((resolve) => {
+  receive(): Promise<HaggisString> {
+    return new Promise((resolve) => {
       reader.on("line", (line) => {
         if (line === null) {
-          resolve("");
+          resolve(new HaggisString(""));
         }
 
-        resolve(line);
+        resolve(new HaggisString(line));
       });
     });
-
-    return new HaggisString(input);
   },
 };

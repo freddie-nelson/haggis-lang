@@ -16,6 +16,9 @@ export default class Scanner {
   /** The line number we are on in the source */
   private line = 1;
 
+  private startColumn = 0;
+  private column = 0;
+
   constructor(source: string) {
     this.source = source;
   }
@@ -24,10 +27,12 @@ export default class Scanner {
     while (!this.isAtEnd()) {
       // we are at the beginning of the next lexeme
       this.start = this.current;
+      this.startColumn = this.column;
       this.scanToken();
     }
 
     this.start = this.current;
+    this.startColumn = this.column;
     this.addToken(TokenType.EOF);
 
     return this.tokens;
@@ -92,7 +97,10 @@ export default class Scanner {
         if (this.tokens.length === 0 || this.tokens[this.tokens.length - 1].type !== TokenType.SEPARATOR)
           this.addToken(TokenType.SEPARATOR);
 
-        if (c === "\n") this.line++;
+        if (c === "\n") {
+          this.line++;
+          this.column = 0;
+        }
         break;
 
       // comparision operators
@@ -255,11 +263,12 @@ export default class Scanner {
   }
 
   private advance(): string {
+    this.column++;
     return this.source.charAt(this.current++);
   }
 
   private addToken(type: TokenType, literal?: any) {
     const text = this.source.substring(this.start, this.current);
-    this.tokens.push(new Token(type, text, literal, this.line, this.start));
+    this.tokens.push(new Token(type, text, literal, this.line, this.startColumn));
   }
 }

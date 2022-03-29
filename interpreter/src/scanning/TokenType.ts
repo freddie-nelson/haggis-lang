@@ -94,7 +94,7 @@ export enum TokenType {
   OPEN,
   CLOSE,
   SEND,
-  RECIEVE,
+  RECEIVE,
   RETURN,
   END,
 

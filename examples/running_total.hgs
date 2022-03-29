@@ -5,4 +5,4 @@ FOR EACH num FROM myArray DO
   SET total TO total + num
 END FOR EACH
 
-SEND total & "" TO DISPLAY
+SEND total TO DISPLAY

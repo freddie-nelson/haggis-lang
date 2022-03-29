@@ -25,8 +25,8 @@ import {
   IfStmt,
   OpenStmt,
   ProcedureStmt,
-  RecieveStmt,
-  RecieveVarStmt,
+  ReceiveStmt,
+  ReceiveVarStmt,
   RecordStmt,
   ReturnStmt,
   SendStmt,
@@ -95,7 +95,7 @@ export default class Parser {
     if (this.match(TokenType.OPEN)) return this.openStatement();
     if (this.match(TokenType.CLOSE)) return this.closeStatement();
     if (this.match(TokenType.SEND)) return this.sendStatement();
-    if (this.match(TokenType.RECIEVE)) return this.recieveStatement();
+    if (this.match(TokenType.RECEIVE)) return this.receiveStatement();
     if (this.match(TokenType.RETURN)) return this.returnStatement();
 
     return this.expressionStatement();
@@ -247,7 +247,7 @@ export default class Parser {
 
   // -------------------- DECLARATIONS --------------------
 
-  private varDeclaration(): VarStmt | RecieveVarStmt {
+  private varDeclaration(): VarStmt | ReceiveVarStmt {
     let name: Token | GetExpr;
     if (this.match(TokenType.THIS)) {
       const object = this.previous();
@@ -268,7 +268,7 @@ export default class Parser {
       const entity = this.systemEntity();
       this.consume(TokenType.SEPARATOR, "Expect '\\n' after system entity.");
 
-      return new RecieveVarStmt(name, type, entity);
+      return new ReceiveVarStmt(name, type, entity);
     } else {
       const initializer = this.expression();
       this.consume(TokenType.SEPARATOR, "Expect '\\n' after variable initializer.");
@@ -430,13 +430,13 @@ export default class Parser {
     const value = this.expression();
     this.consume(TokenType.TO, "Expect 'TO' after send value.");
 
-    const reciever = this.systemEntity();
-    this.consume(TokenType.SEPARATOR, "Expect '\\n' after reciever.");
+    const receiver = this.systemEntity();
+    this.consume(TokenType.SEPARATOR, "Expect '\\n' after receiver.");
 
-    return new SendStmt(keyword, value, reciever);
+    return new SendStmt(keyword, value, receiver);
   }
 
-  private recieveStatement(): RecieveStmt {
+  private receiveStatement(): ReceiveStmt {
     const keyword = this.previous();
 
     const object = this.expression();
@@ -449,7 +449,7 @@ export default class Parser {
       this.error(keyword, "Invalid assignment target.");
     }
 
-    return new RecieveStmt(keyword, object, sender);
+    return new ReceiveStmt(keyword, object, sender);
   }
 
   private returnStatement(): ReturnStmt {
@@ -1000,7 +1000,7 @@ export default class Parser {
         case TokenType.OPEN:
         case TokenType.CLOSE:
         case TokenType.SEND:
-        case TokenType.RECIEVE:
+        case TokenType.RECEIVE:
           return;
       }
 

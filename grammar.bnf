@@ -30,7 +30,7 @@ statement   = ifStmt
             | forStmt | forEachStmt 
             | setStmt 
             | createStmt | openStmt | closeStmt
-            | sendStmt | recieveStmt 
+            | sendStmt | receiveStmt 
             | returnStmt
             | exprStmt ;
 
@@ -49,7 +49,7 @@ openStmt    = "OPEN" FILE SEPARATOR ;
 closeStmt   = "CLOSE" FILE SEPARATOR ;
 
 sendStmt    = "SEND" expression "TO" SYS_ENTITY SEPARATOR ;
-recieveStmt = "RECIEVE" expression "FROM" SYS_ENTITY SEPARATOR ;
+receiveStmt = "RECEIVE" expression "FROM" SYS_ENTITY SEPARATOR ;
 
 returnStmt  = "RETURN" expression? SEPARATOR;
 

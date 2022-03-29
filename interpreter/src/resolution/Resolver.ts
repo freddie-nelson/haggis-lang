@@ -30,12 +30,12 @@ import {
   WhileStmt,
   ClassStmt,
   RecordStmt,
-  RecieveVarStmt,
+  ReceiveVarStmt,
   SetStmt,
   CreateStmt,
   OpenStmt,
   CloseStmt,
-  RecieveStmt,
+  ReceiveStmt,
   SendStmt,
 } from "../ast/Stmt";
 import { IdentifierTypeExpr, Type, TypeExpr } from "../ast/TypeExpr";
@@ -180,7 +180,7 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     }
   }
 
-  visitRecieveVarStmt(stmt: RecieveVarStmt) {
+  visitReceiveVarStmt(stmt: ReceiveVarStmt) {
     const isThisDeclaration = stmt.name instanceof GetExpr;
     if (isThisDeclaration) {
       this.resolve(stmt.name.object);
@@ -272,7 +272,7 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
     this.resolve(stmt.value);
   }
 
-  visitRecieveStmt(stmt: RecieveStmt) {
+  visitReceiveStmt(stmt: ReceiveStmt) {
     this.resolve(stmt.object);
     if (stmt.sender instanceof Expr) this.resolve(stmt.sender);
   }

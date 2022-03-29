@@ -1,0 +1,4 @@
+DECLARE foo INITIALLY ""
+RECEIVE foo FROM KEYBOARD
+
+SEND "Received: " & foo TO DISPLAY

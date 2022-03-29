@@ -39,7 +39,7 @@ export default class GenerateAst {
       "Function   :: name: Token, params: Parameter[], returnType: TypeExpr, body: Stmt[]",
 
       "Var        :: name: Token | GetExpr, type: TypeExpr | undefined, initializer: Expr",
-      "RecieveVar :: name: Token | GetExpr, type: TypeExpr | undefined, sender: Token | Expr",
+      "ReceiveVar :: name: Token | GetExpr, type: TypeExpr | undefined, sender: Token | Expr",
 
       "If         :: keyword: Token, condition: Expr, thenBranch: Stmt[], elseBranch: Stmt[] | undefined",
 
@@ -56,7 +56,7 @@ export default class GenerateAst {
       "Close      :: keyword: Token, file: Expr",
 
       "Send       :: keyword: Token, value: Expr, dest: Token | Expr",
-      "Recieve    :: keyword: Token, object: Expr, sender: Token | Expr",
+      "Receive    :: keyword: Token, object: Expr, sender: Token | Expr",
 
       "Return     :: keyword: Token, value: Expr | undefined",
 

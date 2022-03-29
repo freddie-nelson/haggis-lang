@@ -28,8 +28,8 @@ import {
   IfStmt,
   OpenStmt,
   ProcedureStmt,
-  RecieveStmt,
-  RecieveVarStmt,
+  ReceiveStmt,
+  ReceiveVarStmt,
   RecordStmt,
   ReturnStmt,
   SendStmt,
@@ -203,7 +203,7 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
     }
   }
 
-  visitRecieveVarStmt(stmt: RecieveVarStmt) {
+  visitReceiveVarStmt(stmt: ReceiveVarStmt) {
     const token = stmt.name instanceof GetExpr ? stmt.name.name : stmt.name;
 
     let initializer: TypeExpr;
@@ -225,7 +225,7 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
     }
   }
 
-  private variableType(stmt: VarStmt | RecieveVarStmt, initializer: TypeExpr) {
+  private variableType(stmt: VarStmt | ReceiveVarStmt, initializer: TypeExpr) {
     let type = stmt.type;
     if (!stmt.type) {
       type = initializer;
@@ -356,7 +356,7 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
       this.error(stmt.keyword, "Assignment target and value type do not match.");
   }
 
-  visitRecieveStmt(stmt: RecieveStmt) {
+  visitReceiveStmt(stmt: ReceiveStmt) {
     const object = this.type(stmt.object);
 
     if (object.type === Type.CLASS || object.type === Type.RECORD)

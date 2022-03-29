@@ -161,10 +161,10 @@ KEYBOARD      # reads input from user/stdin as STRING
 SEND "Hello World!" TO DISPLAY
 SEND myVar TO DISPLAY
 
-# syntax : RECIEVE id FROM KEYBOARD
-RECIEVE name FROM KEYBOARD      # name is declared and given the value from stdin
+# syntax : RECEIVE id FROM KEYBOARD
+RECEIVE name FROM KEYBOARD      # name is declared and given the value from stdin
                                 # if variable is already declared then that variables value is overwritten
-RECIEVE age FROM KEYBOARD
+RECEIVE age FROM KEYBOARD
 ```
 
 # Conditional Statements
@@ -221,7 +221,7 @@ REPEAT command UNTIL expression
 
 ```
 WHILE !isPasswordCorrect DO
-    RECIEVE password FROM KEYBOARD
+    RECEIVE password FROM KEYBOARD
     IF password == "epicpassword" THEN
         SET isPasswordCorrect TO true
     END IF

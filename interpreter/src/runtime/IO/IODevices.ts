@@ -2,7 +2,7 @@ import HaggisString from "../values/HaggisString";
 import HaggisValue from "../values/HaggisValue";
 
 export interface InputDevice<T extends HaggisValue> {
-  recieve(sender: string): Promise<T>;
+  receive(sender: string): Promise<T>;
 }
 
 export interface OutputDevice<T extends HaggisValue> {

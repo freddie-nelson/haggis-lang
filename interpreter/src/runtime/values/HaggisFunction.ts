@@ -35,14 +35,14 @@ export default class HaggisFunction extends HaggisValue implements HaggisCallabl
     return new HaggisFunction(this.declaration, env, this.isInitializer);
   }
 
-  call(interpreter: Interpreter, args: HaggisValue[]): HaggisValue {
+  async call(interpreter: Interpreter, args: HaggisValue[]): Promise<HaggisValue> {
     const env = new Environment(this.closure);
     this.declaration.params.forEach((p, i) => {
       env.define(p.name.lexeme, args[i]);
     });
 
     try {
-      interpreter.executeBlock(this.declaration.body, env);
+      await interpreter.executeBlock(this.declaration.body, env);
     } catch (error) {
       if (error instanceof ReturnError) {
         if (this.isInitializer)

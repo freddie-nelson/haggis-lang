@@ -23,7 +23,7 @@ import {
   ProcedureStmt,
   FunctionStmt,
   VarStmt,
-  RecieveVarStmt,
+  ReceiveVarStmt,
   ExpressionStmt,
   IfStmt,
   WhileStmt,
@@ -31,7 +31,7 @@ import {
   ForStmt,
   ForEachStmt,
   SetStmt,
-  RecieveStmt,
+  ReceiveStmt,
   SendStmt,
   CreateStmt,
   OpenStmt,
@@ -65,7 +65,7 @@ import HaggisString from "./values/HaggisString";
 import HaggisValue from "./values/HaggisValue";
 import HaggisVoid from "./values/HaggisVoid";
 
-export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisitor<void> {
+export default class Interpreter implements ExprVisitor<Promise<HaggisValue>>, StmtVisitor<void> {
   readonly globals = new Environment();
   readonly locals: Map<Expr | TypeExpr, number> = new Map();
 
@@ -133,65 +133,65 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
     this.environment.define(stmt.name.lexeme, func);
   }
 
-  visitVarStmt(stmt: VarStmt) {
+  async visitVarStmt(stmt: VarStmt) {
     if (stmt.name instanceof GetExpr) {
       const set = new SetStmt(stmt.name.name, stmt.name, stmt.initializer);
-      this.execute(set);
+      await this.execute(set);
     } else {
-      const value = this.evaluate(stmt.initializer).copy();
+      const value = (await this.evaluate(stmt.initializer)).copy();
       this.environment.define(stmt.name.lexeme, value);
     }
   }
 
-  async visitRecieveVarStmt(stmt: RecieveVarStmt) {
+  async visitReceiveVarStmt(stmt: ReceiveVarStmt) {
     if (stmt.name instanceof GetExpr) {
-      const set = new RecieveStmt(stmt.name.name, stmt.name, stmt.sender);
-      this.execute(set);
+      const set = new ReceiveStmt(stmt.name.name, stmt.name, stmt.sender);
+      await this.execute(set);
     } else {
       let value: HaggisValue;
 
       if (stmt.sender instanceof Expr) {
-        const sender = <HaggisString>this.evaluate(stmt.sender);
-        value = await this.io.fileHandler.recieve(sender.jsString());
+        const sender = <HaggisString>await this.evaluate(stmt.sender);
+        value = await this.io.fileHandler.receive(sender.jsString());
       } else {
         const device = <InputDevice<HaggisValue>>this.io[stmt.sender.lexeme];
-        value = await device.recieve(stmt.sender.lexeme);
+        value = await device.receive(stmt.sender.lexeme);
       }
 
       this.environment.define(stmt.name.lexeme, value);
     }
   }
 
-  visitExpressionStmt(stmt: ExpressionStmt) {
-    this.evaluate(stmt.expression);
+  async visitExpressionStmt(stmt: ExpressionStmt) {
+    await this.evaluate(stmt.expression);
   }
 
-  visitIfStmt(stmt: IfStmt) {
-    const enter = <HaggisBoolean>this.evaluate(stmt.condition);
+  async visitIfStmt(stmt: IfStmt) {
+    const enter = <HaggisBoolean>await this.evaluate(stmt.condition);
 
     if (enter.value) {
-      this.executeBlock(stmt.thenBranch, new Environment(this.environment));
+      await this.executeBlock(stmt.thenBranch, new Environment(this.environment));
     } else if (stmt.elseBranch) {
-      this.executeBlock(stmt.elseBranch, new Environment(this.environment));
+      await this.executeBlock(stmt.elseBranch, new Environment(this.environment));
     }
   }
 
-  visitWhileStmt(stmt: WhileStmt) {
-    while ((<HaggisBoolean>this.evaluate(stmt.condition)).value) {
-      this.executeBlock(stmt.body, new Environment(this.environment));
+  async visitWhileStmt(stmt: WhileStmt) {
+    while ((<HaggisBoolean>await this.evaluate(stmt.condition)).value) {
+      await this.executeBlock(stmt.body, new Environment(this.environment));
     }
   }
 
-  visitUntilStmt(stmt: UntilStmt) {
+  async visitUntilStmt(stmt: UntilStmt) {
     do {
-      this.executeBlock(stmt.body, new Environment(this.environment));
-    } while (!(<HaggisBoolean>this.evaluate(stmt.condition)).value);
+      await this.executeBlock(stmt.body, new Environment(this.environment));
+    } while (!(<HaggisBoolean>await this.evaluate(stmt.condition)).value);
   }
 
-  visitForStmt(stmt: ForStmt) {
-    const lower = <HaggisNumber>this.evaluate(stmt.lower).copy();
-    const upper = <HaggisNumber>this.evaluate(stmt.upper).copy();
-    const step = <HaggisNumber>this.evaluate(stmt.step).copy();
+  async visitForStmt(stmt: ForStmt) {
+    const lower = <HaggisNumber>(await this.evaluate(stmt.lower)).copy();
+    const upper = <HaggisNumber>(await this.evaluate(stmt.upper)).copy();
+    const step = <HaggisNumber>(await this.evaluate(stmt.step)).copy();
 
     let counter: HaggisNumber;
     if (lower.type === Type.REAL || upper.type === Type.REAL || step.type === Type.REAL)
@@ -210,7 +210,7 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
         if (counter.value < upper.value) break;
       }
 
-      this.executeBlock(stmt.body, this.environment);
+      await this.executeBlock(stmt.body, this.environment);
 
       this.environment.assign(
         stmt.counter,
@@ -223,8 +223,8 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
     this.environment = this.environment.enclosing;
   }
 
-  visitForEachStmt(stmt: ForEachStmt) {
-    const object = <HaggisArray>this.evaluate(stmt.object);
+  async visitForEachStmt(stmt: ForEachStmt) {
+    const object = <HaggisArray>await this.evaluate(stmt.object);
 
     this.environment = new Environment(this.environment);
     this.environment.define(stmt.iterator.lexeme, new HaggisVoid());
@@ -233,37 +233,37 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
     for (let i = 0; i < len; i++) {
       this.environment.assign(stmt.iterator, object.get(new HaggisInteger(i), stmt.iterator).copy());
 
-      this.executeBlock(stmt.body, this.environment);
+      await this.executeBlock(stmt.body, this.environment);
     }
 
     this.environment = this.environment.enclosing;
   }
 
-  visitSetStmt(stmt: SetStmt) {
-    const value = this.evaluate(stmt.value).copy();
+  async visitSetStmt(stmt: SetStmt) {
+    const value = (await this.evaluate(stmt.value)).copy();
     this.setObject(stmt.object, value);
   }
 
-  async visitRecieveStmt(stmt: RecieveStmt) {
+  async visitReceiveStmt(stmt: ReceiveStmt) {
     if (stmt.sender instanceof Expr) {
-      const sender = <HaggisString>this.evaluate(stmt.sender);
-      const value = await this.io.fileHandler.recieve(sender.jsString());
-      this.setObject(stmt.object, value.copy());
+      const sender = <HaggisString>await this.evaluate(stmt.sender);
+      const value = await this.io.fileHandler.receive(sender.jsString());
+      await this.setObject(stmt.object, value.copy());
     } else {
       const device = <InputDevice<HaggisValue>>this.io[stmt.sender.lexeme];
-      const value = await device.recieve(stmt.sender.lexeme);
-      this.setObject(stmt.object, value.copy());
+      const value = await device.receive(stmt.sender.lexeme);
+      await this.setObject(stmt.object, value.copy());
     }
   }
 
-  private setObject(object: Expr, value: HaggisValue) {
+  private async setObject(object: Expr, value: HaggisValue) {
     if (object instanceof GetExpr) {
-      const instance = <HaggisInstance>this.evaluate(object.object);
+      const instance = <HaggisInstance>await this.evaluate(object.object);
       instance.set(object.name.lexeme, value);
       return;
     } else if (object instanceof IndexExpr) {
-      const array = <HaggisArray>this.evaluate(object.object);
-      const index = <HaggisInteger>this.evaluate(object.index);
+      const array = <HaggisArray>await this.evaluate(object.object);
+      const index = <HaggisInteger>await this.evaluate(object.index);
       array.set(index, value, object.bracket);
       return;
     } else if (object instanceof VariableExpr) {
@@ -280,10 +280,10 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
   }
 
   async visitSendStmt(stmt: SendStmt) {
-    const value = this.evaluate(stmt.value);
+    const value = await this.evaluate(stmt.value);
 
     if (stmt.dest instanceof Expr) {
-      const dest = <HaggisString>this.evaluate(stmt.dest);
+      const dest = <HaggisString>await this.evaluate(stmt.dest);
       await this.io.fileHandler.send(<HaggisString>value, dest.jsString());
     } else {
       const dest = <OutputDevice<HaggisValue>>this.io[stmt.dest.lexeme];
@@ -291,69 +291,71 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
     }
   }
 
-  visitCreateStmt(stmt: CreateStmt) {
-    const file = <HaggisString>this.evaluate(stmt.file);
+  async visitCreateStmt(stmt: CreateStmt) {
+    const file = <HaggisString>await this.evaluate(stmt.file);
     this.io.fileHandler.create(file);
   }
 
-  visitOpenStmt(stmt: OpenStmt) {
-    const file = <HaggisString>this.evaluate(stmt.file);
+  async visitOpenStmt(stmt: OpenStmt) {
+    const file = <HaggisString>await this.evaluate(stmt.file);
     this.io.fileHandler.open(file);
   }
 
-  visitCloseStmt(stmt: CloseStmt) {
-    const file = <HaggisString>this.evaluate(stmt.file);
+  async visitCloseStmt(stmt: CloseStmt) {
+    const file = <HaggisString>await this.evaluate(stmt.file);
     this.io.fileHandler.close(file);
   }
 
-  visitReturnStmt(stmt: ReturnStmt) {
-    const value = stmt.value ? this.evaluate(stmt.value) : new HaggisVoid();
+  async visitReturnStmt(stmt: ReturnStmt) {
+    const value = stmt.value ? await this.evaluate(stmt.value) : new HaggisVoid();
     throw new ReturnError(value);
   }
 
-  visitVariableExpr(expr: VariableExpr) {
+  async visitVariableExpr(expr: VariableExpr) {
     return this.lookUpVariable(expr.name, expr);
   }
 
-  visitArrayExpr(expr: ArrayExpr) {
-    const items = expr.items.map((item) => this.evaluate(item).copy());
+  async visitArrayExpr(expr: ArrayExpr) {
+    const items = await Promise.all(expr.items.map(async (item) => (await this.evaluate(item)).copy()));
     return new HaggisArray(items);
   }
 
-  visitRecordExpr(expr: RecordExpr) {
+  async visitRecordExpr(expr: RecordExpr) {
     const fields: Map<string, HaggisValue> = new Map();
-    expr.fields.forEach((f, i) => {
-      const value = this.evaluate(expr.values[i]).copy();
+
+    for (let i = 0; i < expr.fields.length; i++) {
+      const f = expr.fields[i];
+      const value = (await this.evaluate(expr.values[i])).copy();
       fields.set(f.lexeme, value);
-    });
+    }
 
     return new HaggisRecordInstance(fields);
   }
 
-  visitIndexExpr(expr: IndexExpr) {
-    const object = <HaggisArray>this.evaluate(expr.object);
-    const index = <HaggisInteger>this.evaluate(expr.index);
+  async visitIndexExpr(expr: IndexExpr) {
+    const object = <HaggisArray>await this.evaluate(expr.object);
+    const index = <HaggisInteger>await this.evaluate(expr.index);
 
     return object.get(index, expr.bracket);
   }
 
-  visitCallExpr(expr: CallExpr) {
-    const func = <HaggisCallable>(<any>this.evaluate(expr.callee));
-    const args = expr.args.map((a) => this.evaluate(a).copy());
+  async visitCallExpr(expr: CallExpr) {
+    const func = <HaggisCallable>(<any>await this.evaluate(expr.callee));
+    const args = await Promise.all(expr.args.map(async (a) => (await this.evaluate(a)).copy()));
 
-    return func.call(this, args);
+    return await func.call(this, args);
   }
 
-  visitGetExpr(expr: GetExpr) {
-    const object = <HaggisClassInstance | HaggisRecordInstance>this.evaluate(expr.object);
+  async visitGetExpr(expr: GetExpr) {
+    const object = <HaggisClassInstance | HaggisRecordInstance>await this.evaluate(expr.object);
     return object.get(expr.name.lexeme);
   }
 
-  visitThisExpr(expr: ThisExpr) {
+  async visitThisExpr(expr: ThisExpr) {
     return this.lookUpVariable(expr.keyword, expr);
   }
 
-  visitSuperExpr(expr: SuperExpr) {
+  async visitSuperExpr(expr: SuperExpr) {
     const distance = this.locals.get(expr);
 
     const superclass = <HaggisClass>this.environment.getAt(distance, expr.keyword);
@@ -364,11 +366,11 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
     return superclass.getMethod(expr.method.lexeme).bind(instance);
   }
 
-  visitGroupingExpr(expr: GroupingExpr) {
-    return this.evaluate(expr.expression);
+  async visitGroupingExpr(expr: GroupingExpr) {
+    return await this.evaluate(expr.expression);
   }
 
-  visitLiteralExpr(expr: LiteralExpr) {
+  async visitLiteralExpr(expr: LiteralExpr) {
     switch (expr.type) {
       case Type.INTEGER:
         return new HaggisInteger(expr.value);
@@ -385,8 +387,8 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
     }
   }
 
-  visitLogicalExpr(expr: LogicalExpr) {
-    const left = <HaggisBoolean>this.evaluate(expr.left);
+  async visitLogicalExpr(expr: LogicalExpr) {
+    const left = <HaggisBoolean>await this.evaluate(expr.left);
 
     if (expr.operator.type === TokenType.OR) {
       if (left.value) return left;
@@ -394,12 +396,12 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
       if (!left.value) return left;
     }
 
-    return this.evaluate(expr.right);
+    return await this.evaluate(expr.right);
   }
 
-  visitBinaryExpr(expr: BinaryExpr) {
-    const left = this.evaluate(expr.left);
-    const right = this.evaluate(expr.right);
+  async visitBinaryExpr(expr: BinaryExpr) {
+    const left = await this.evaluate(expr.left);
+    const right = await this.evaluate(expr.right);
 
     switch (expr.operator.type) {
       case TokenType.EQUAL:
@@ -435,8 +437,8 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
 
             if (index === len - 1) {
               array = leftIsArray
-                ? <HaggisArray>this.evaluate(expr.left)
-                : <HaggisArray>this.evaluate(expr.right);
+                ? <HaggisArray>await this.evaluate(expr.left)
+                : <HaggisArray>await this.evaluate(expr.right);
             }
           }
 
@@ -495,8 +497,8 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
     }
   }
 
-  visitUnaryExpr(expr: UnaryExpr) {
-    const right = this.evaluate(expr.right);
+  async visitUnaryExpr(expr: UnaryExpr) {
+    const right = await this.evaluate(expr.right);
 
     switch (expr.operator.type) {
       case TokenType.NOT:
@@ -515,15 +517,15 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
     return stmt.accept(this);
   }
 
-  executeBlock(statements: Stmt[], env: Environment) {
+  async executeBlock(statements: Stmt[], env: Environment) {
     const previous = this.environment;
 
     try {
       this.environment = env;
 
-      statements.forEach((s) => {
-        this.execute(s);
-      });
+      for (const s of statements) {
+        await this.execute(s);
+      }
     } catch (error) {
       throw error;
     } finally {
@@ -531,7 +533,7 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
     }
   }
 
-  evaluate(expression: Expr): HaggisValue {
+  evaluate(expression: Expr): Promise<HaggisValue> {
     return expression.accept(this);
   }
 

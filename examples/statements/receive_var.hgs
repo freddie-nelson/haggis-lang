@@ -1,2 +1,2 @@
 DECLARE foo INITIALLY FROM KEYBOARD
-SEND "Recieved: " & foo TO DISPLAY
+SEND "Received: " & foo TO DISPLAY

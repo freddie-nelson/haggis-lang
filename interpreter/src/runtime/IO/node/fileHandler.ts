@@ -1,5 +1,5 @@
 import { close, closeSync, openSync, readFileSync, readSync, writeFileSync } from "fs";
-import { RecieveStmt } from "../../../ast/Stmt";
+import { ReceiveStmt } from "../../../ast/Stmt";
 import Token from "../../../scanning/Token";
 import { TokenType } from "../../../scanning/TokenType";
 import RuntimeError from "../../RuntimeError";
@@ -90,7 +90,7 @@ export default <FileHandler>{
       );
     }
   },
-  async recieve(sender) {
+  async receive(sender) {
     if (!openFiles.has(sender))
       throw new RuntimeError(
         new Token(TokenType.IDENTIFIER, sender, undefined, -1, -1),
