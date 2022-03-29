@@ -298,7 +298,11 @@ export default class Parser {
 
     let elseBranch: Stmt[];
     if (this.match(TokenType.ELSE)) {
-      elseBranch = this.body("Expect 'END IF' after else body.", TokenType.END, TokenType.IF);
+      if (this.match(TokenType.IF)) {
+        elseBranch = [this.ifStatement()];
+      } else {
+        elseBranch = this.body("Expect 'END IF' after else body.", TokenType.END, TokenType.IF);
+      }
     } else {
       this.advance();
       this.consume(TokenType.IF, "Expect 'END IF' after if body.");

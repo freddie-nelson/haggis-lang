@@ -1,0 +1,24 @@
+SEND "odds?" TO DISPLAY
+DECLARE input INITIALLY FROM KEYBOARD
+DECLARE odds INITIALLY CInt(input)
+
+SEND "Guess between 1 and " & odds TO DISPLAY
+
+DECLARE num INITIALLY CInt(Random() * odds + 1)
+DECLARE guess INITIALLY 0
+
+SEND "Start guessing!" TO DISPLAY
+
+WHILE guess ≠ num DO
+  RECEIVE input FROM KEYBOARD
+  SET guess TO CInt(input)
+
+  IF guess < num THEN
+    SEND "too low" TO DISPLAY
+  ELSE IF guess > num THEN
+    SEND "too high" TO DISPLAY
+  END IF
+END WHILE
+
+SEND "Well done!" TO DISPLAY
+  

@@ -103,7 +103,7 @@ export default class Haggis {
     if (token.type === TokenType.EOF) {
       this.report(token.line, "at end", message);
     } else {
-      this.report(token.line, `at '${token.lexeme}'`, message);
+      this.report(token.line, `at '${token.lexeme.replace("\n", "\\n")}'`, message);
     }
   }
 

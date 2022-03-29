@@ -5,6 +5,6 @@ FOR i FROM 1 TO Length(nums) - 1 DO
   IF nums[i] < min.value THEN
     SET min TO { index = i, value = nums[i] }
   END IF
-END FOR
+END 
 
 SEND "Min was " & min.value & " at position " & min.index TO DISPLAY

@@ -34,7 +34,7 @@ statement   = ifStmt
             | returnStmt
             | exprStmt ;
 
-ifStmt      = "IF" expression "THEN" body ( "ELSE" body )? "END" "IF" SEPARATOR? ;
+ifStmt      = "IF" expression "THEN" body ( ( "ELSE" body )? "END" "IF" ) | ( "ELSE" ifStmt ) SEPARATOR? ;
 
 whileStmt   = "WHILE" expression "DO" body "END" "WHILE" SEPARATOR? ;
 untilStmt   = "REPEAT" body "UNTIL" expression SEPARATOR ;

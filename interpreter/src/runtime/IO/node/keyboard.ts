@@ -8,6 +8,8 @@ const reader = createInterface({
 
 export default <InputDevice<HaggisString>>{
   receive(): Promise<HaggisString> {
+    reader.removeAllListeners("line");
+
     return new Promise((resolve) => {
       reader.on("line", (line) => {
         if (line === null) {

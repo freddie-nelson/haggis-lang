@@ -24,7 +24,7 @@ class CIntCallable extends HaggisCallable {
 
     let number: number;
     if (object instanceof HaggisString) {
-      number = Number(object.jsString());
+      number = Number(object.jsString() || NaN);
     } else {
       number = Number(object.value);
     }
