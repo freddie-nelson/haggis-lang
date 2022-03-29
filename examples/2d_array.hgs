@@ -1,0 +1,6 @@
+DECLARE rows INITIALLY CInt(Random() * 20 + 1)
+DECLARE cols INITIALLY CInt(Random() * 20 + 1)
+
+DECLARE myArray INITIALLY [ [ CInt(Random() * 10) ] * cols ] * rows
+
+SEND myArray TO DISPLAY

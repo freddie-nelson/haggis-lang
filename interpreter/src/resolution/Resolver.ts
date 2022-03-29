@@ -325,6 +325,9 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
   }
 
   visitArrayExpr(expr: ArrayExpr) {
+    if (expr.items.length === 0)
+      Haggis.error(expr.startBracket, "Array expressions must have at least one item.");
+
     expr.items.forEach((i) => {
       this.resolve(i);
     });

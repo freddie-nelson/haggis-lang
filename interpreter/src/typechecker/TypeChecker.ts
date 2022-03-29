@@ -227,15 +227,7 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
 
   private variableType(stmt: VarStmt | ReceiveVarStmt, initializer: TypeExpr) {
     let type = stmt.type;
-    if (!stmt.type) {
-      type = initializer;
-
-      if (type instanceof ArrayTypeExpr && !type.itemType)
-        this.error(
-          stmt.name instanceof GetExpr ? stmt.name.name : stmt.name,
-          "Cannot infer variable type from initializer."
-        );
-    }
+    if (!stmt.type) type = initializer;
 
     if (stmt.name instanceof GetExpr) {
       type = this.type(stmt.name);

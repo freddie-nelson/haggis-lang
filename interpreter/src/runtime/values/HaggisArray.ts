@@ -24,6 +24,8 @@ export default class HaggisArray extends HaggisArrayBase implements HaggisValue 
   }
 
   toString() {
-    return new HaggisString(`[ ${this.items.map((i) => i.toString().jsString(true)).join(", ")} ]`);
+    return new HaggisString(
+      `[ ${this.items.map((i) => i.toString().jsString(i.type === Type.STRING)).join(", ")} ]`
+    );
   }
 }

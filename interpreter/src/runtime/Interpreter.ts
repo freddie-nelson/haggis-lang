@@ -241,7 +241,7 @@ export default class Interpreter implements ExprVisitor<Promise<HaggisValue>>, S
 
   async visitSetStmt(stmt: SetStmt) {
     const value = await this.evaluate(stmt.value);
-    this.setObject(stmt.object, value);
+    await this.setObject(stmt.object, value);
   }
 
   async visitReceiveStmt(stmt: ReceiveStmt) {
