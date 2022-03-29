@@ -40,6 +40,7 @@ import {
 } from "../ast/Stmt";
 import { Type, TypeExpr } from "../ast/TypeExpr";
 import Haggis from "../Haggis";
+import { NATIVE_FUNCTIONS } from "../natives/natives";
 import ImplementationError from "../parsing/ImplementationError";
 import Token from "../scanning/Token";
 import { TokenType } from "../scanning/TokenType";
@@ -73,6 +74,8 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
 
   constructor(io: IODevices) {
     this.io = io;
+
+    NATIVE_FUNCTIONS.forEach((f) => this.globals.define(f.name, f.func));
   }
 
   async interpret(statements: Stmt[]) {
@@ -168,7 +171,7 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
 
     if (enter.value) {
       this.executeBlock(stmt.thenBranch, new Environment(this.environment));
-    } else {
+    } else if (stmt.elseBranch) {
       this.executeBlock(stmt.elseBranch, new Environment(this.environment));
     }
   }
@@ -228,7 +231,7 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
 
     const len = object.length().value;
     for (let i = 0; i < len; i++) {
-      this.environment.assign(stmt.iterator, object.get(new HaggisInteger(i)).copy());
+      this.environment.assign(stmt.iterator, object.get(new HaggisInteger(i), stmt.iterator).copy());
 
       this.executeBlock(stmt.body, this.environment);
     }
@@ -261,7 +264,7 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
     } else if (object instanceof IndexExpr) {
       const array = <HaggisArray>this.evaluate(object.object);
       const index = <HaggisInteger>this.evaluate(object.index);
-      array.set(index, value);
+      array.set(index, value, object.bracket);
       return;
     } else if (object instanceof VariableExpr) {
       const distance = this.locals.get(object);
@@ -331,7 +334,7 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
     const object = <HaggisArray>this.evaluate(expr.object);
     const index = <HaggisInteger>this.evaluate(expr.index);
 
-    return object.get(index);
+    return object.get(index, expr.bracket);
   }
 
   visitCallExpr(expr: CallExpr) {
@@ -426,7 +429,7 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
 
           for (let i = 0; i < newLen; i++) {
             const index = i % len;
-            const item = array.get(new HaggisInteger(index));
+            const item = array.get(new HaggisInteger(index), expr.operator);
 
             items.push(item.copy());
 
@@ -471,13 +474,13 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
 
           let len = leftArr.length().value;
           for (let i = 0; i < len; i++) {
-            const item = leftArr.get(new HaggisInteger(i));
+            const item = leftArr.get(new HaggisInteger(i), expr.operator);
             items.push(item.copy());
           }
 
           len = rightArr.length().value;
           for (let i = 0; i < len; i++) {
-            const item = rightArr.get(new HaggisInteger(i));
+            const item = rightArr.get(new HaggisInteger(i), expr.operator);
             items.push(item.copy());
           }
 

@@ -40,6 +40,7 @@ import {
 } from "../ast/Stmt";
 import { IdentifierTypeExpr, Type, TypeExpr } from "../ast/TypeExpr";
 import Haggis from "../Haggis";
+import { NATIVE_FUNCTIONS } from "../natives/natives";
 import Interpreter from "../runtime/Interpreter";
 import Token from "../scanning/Token";
 import { TokenType } from "../scanning/TokenType";
@@ -94,6 +95,8 @@ export default class Resolver implements ExprVisitor<void>, StmtVisitor<void> {
 
   constructor(interpreter: Interpreter) {
     this.interpreter = interpreter;
+
+    NATIVE_FUNCTIONS.forEach((f) => this.global.set(f.name, VariableState.USED));
   }
 
   visitRecordStmt(stmt: RecordStmt) {

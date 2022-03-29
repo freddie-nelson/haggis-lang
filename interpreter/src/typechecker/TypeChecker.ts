@@ -53,6 +53,7 @@ import {
   TypeExpr,
 } from "../ast/TypeExpr";
 import Haggis from "../Haggis";
+import { NATIVE_FUNCTIONS } from "../natives/natives";
 import ImplementationError from "../parsing/ImplementationError";
 import Interpreter from "../runtime/Interpreter";
 import Token from "../scanning/Token";
@@ -73,6 +74,8 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
 
   constructor(interpreter: Interpreter) {
     this.locals = interpreter.locals;
+
+    NATIVE_FUNCTIONS.forEach((f) => this.global.set(f.name, f.type));
   }
 
   typecheck(statements: Stmt[]) {

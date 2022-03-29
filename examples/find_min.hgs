@@ -1,0 +1,10 @@
+DECLARE nums INITIALLY [ 3, 10, 4, 3, 9, 2, 7, 12, 8 ]
+DECLARE min INITIALLY { index = 0, value = nums[0] }
+
+FOR i FROM 1 TO Length(nums) - 1 DO
+  IF nums[i] < min.value THEN
+    SET min TO { index = i, value = nums[i] }
+  END IF
+END FOR
+
+SEND "Min was " & min.value & " at position " & min.index TO DISPLAY

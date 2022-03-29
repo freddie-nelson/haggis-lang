@@ -239,18 +239,18 @@ export class FunctionTypeExpr extends TypeExpr {
   }
 }
 
-export function matchTypes(t1: Type, t2: Type) {
-  if (
-    t1 === Type.IDENTIFER ||
-    t1 === Type.ARRAY ||
-    t1 === Type.CLASS ||
-    t1 === Type.RECORD ||
-    t1 === Type.PROCEDURE ||
-    t1 === Type.FUNCTION
-  )
-    throw new ImplementationError("matchTypes called with non-primitive types.");
+export class GenericTypeExpr extends TypeExpr {
+  readonly types: Type[];
 
-  return t1 === t2;
+  constructor(...types: Type[]) {
+    super(Type.VOID);
+
+    this.types = types;
+  }
+
+  match(type: Type) {
+    return this.types.includes(type);
+  }
 }
 
 /**
@@ -261,6 +261,9 @@ export function matchTypes(t1: Type, t2: Type) {
  * @returns true or false
  */
 export function matchTypeExpr(t1: TypeExpr, t2: TypeExpr): boolean {
+  if (t1 instanceof GenericTypeExpr) return t1.match(t2.type);
+  if (t2 instanceof GenericTypeExpr) return t2.match(t1.type);
+
   if (t1 instanceof ArrayTypeExpr) {
     if (!(t2 instanceof ArrayTypeExpr)) return false;
 
@@ -278,7 +281,7 @@ export function matchTypeExpr(t1: TypeExpr, t2: TypeExpr): boolean {
 
     if (t1.record.fields.size === t2.record.fields.size) {
       for (const f of t1.record.fields) {
-        if (!t2.record.hasField(f[0]) || f[1] !== t2.record.getField(f[0])) return false;
+        if (!t2.record.hasField(f[0]) || !matchTypeExpr(f[1], t2.record.getField(f[0]))) return false;
       }
 
       return true;
