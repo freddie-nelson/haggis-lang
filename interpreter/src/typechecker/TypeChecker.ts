@@ -61,17 +61,9 @@ import { InputEntities, OutputEntities } from "./SystemEntities";
 import TypeError from "./TypeError";
 
 export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<void> {
-  private readonly interpreter: Interpreter;
   private readonly locals: Map<Expr | TypeExpr, number>;
 
   private readonly global: Map<string, TypeExpr> = new Map();
-
-  /**
-   * Local scopes stack.
-   *
-   * The value (true, false) associated with each key in a map represents
-   * wether or not we have finished resolving that variable's initializer.
-   */
   private readonly scopes: Map<string, TypeExpr>[] = [];
 
   private currentClass: ClassTypeExpr;
@@ -80,7 +72,6 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
   private currentFunction: FunctionTypeExpr;
 
   constructor(interpreter: Interpreter) {
-    this.interpreter = interpreter;
     this.locals = interpreter.locals;
   }
 
@@ -233,7 +224,15 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
 
   private variableType(stmt: VarStmt | RecieveVarStmt, initializer: TypeExpr) {
     let type = stmt.type;
-    if (!stmt.type) type = initializer;
+    if (!stmt.type) {
+      type = initializer;
+
+      if (type instanceof ArrayTypeExpr && !type.itemType)
+        this.error(
+          stmt.name instanceof GetExpr ? stmt.name.name : stmt.name,
+          "Cannot infer variable type from initializer."
+        );
+    }
 
     if (stmt.name instanceof GetExpr) {
       type = this.type(stmt.name);

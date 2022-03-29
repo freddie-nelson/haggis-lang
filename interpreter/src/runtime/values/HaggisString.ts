@@ -29,7 +29,10 @@ export default class HaggisString extends HaggisArrayBase implements HaggisValue
     return new HaggisString(this.jsString());
   }
 
-  jsString(): string {
-    return this.items.map((i) => i.value).join("");
+  jsString(wrap = false): string {
+    const s = this.items.map((i) => i.value).join("");
+
+    if (wrap) return `"${s}"`;
+    else return s;
   }
 }

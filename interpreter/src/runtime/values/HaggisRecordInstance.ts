@@ -37,7 +37,7 @@ export default class HaggisRecordInstance extends HaggisValue {
   toString() {
     return new HaggisString(
       `${this.record.name || "RECORD"}{ ${Array.from(this.fields)
-        .map(([f, v]) => `${f} = ${v.toString().jsString()}`)
+        .map(([f, v]) => `${f} = ${v.toString().jsString(v.type === Type.STRING)}`)
         .join(", ")} }`
     );
   }

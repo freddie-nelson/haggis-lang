@@ -1,0 +1,51 @@
+CLASS Event IS { STRING date, STRING startTime, STRING venue, BOOLEAN alert, ARRAY OF STRING participants, INTEGER index }
+
+  METHODS
+  
+  CONSTRUCTOR (STRING date, STRING startTime, STRING venue, BOOLEAN alert)
+    DECLARE THIS.date INITIALLY date
+    DECLARE THIS.startTime INITIALLY startTime
+    DECLARE THIS.venue INITIALLY venue
+    DECLARE THIS.alert INITIALLY alert
+    DECLARE THIS.participants INITIALLY [""] * 20
+    DECLARE THIS.index INITIALLY 0
+  END CONSTRUCTOR
+
+  PROCEDURE updateDate(STRING eventDate)
+    SET THIS.date TO eventDate
+  END PROCEDURE
+
+  FUNCTION getDate() RETURNS STRING
+    RETURN THIS.date
+  END FUNCTION
+
+  PROCEDURE addParticipant(STRING name)
+    SET THIS.participants[THIS.index] TO name
+    SET THIS.index TO THIS.index + 1
+  END PROCEDURE
+
+END CLASS
+
+CLASS Personal INHERITS Event WITH { STRING eventType, STRING description }
+
+  METHODS
+
+  PROCEDURE setEventType(STRING eventType)
+    SET THIS.eventType TO eventType
+  END PROCEDURE
+
+  PROCEDURE setDescription(STRING description)
+    SET THIS.description TO description
+  END PROCEDURE
+
+END CLASS
+
+DECLARE party INITIALLY Event("29/03/2022", "19:00", "My House", true)
+DECLARE personal INITIALLY Personal("01/04/2022", "12:00", "Nandos", false, ["Freddie", "Luke", "Sam"], 0, "Lunch", "Sick lunch with the bros at nandos")
+
+party.addParticipant("John")
+party.addParticipant("Adam")
+party.addParticipant("Matty")
+
+SEND party & "" TO DISPLAY
+SEND personal & "" TO DISPLAY

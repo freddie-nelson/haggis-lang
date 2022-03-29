@@ -415,8 +415,10 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
 
       case TokenType.STAR:
         if (left.type === Type.ARRAY || right.type === Type.ARRAY) {
-          const array = left instanceof HaggisArray ? <HaggisArray>left : <HaggisArray>right;
-          const integer = array === left ? <HaggisInteger>right : <HaggisInteger>left;
+          const leftIsArray = left instanceof HaggisArray;
+
+          let array = leftIsArray ? <HaggisArray>left : <HaggisArray>right;
+          const integer = leftIsArray ? <HaggisInteger>right : <HaggisInteger>left;
 
           const len = array.length().value;
           const newLen = len * integer.value;
@@ -427,6 +429,12 @@ export default class Interpreter implements ExprVisitor<HaggisValue>, StmtVisito
             const item = array.get(new HaggisInteger(index));
 
             items.push(item.copy());
+
+            if (index === len - 1) {
+              array = leftIsArray
+                ? <HaggisArray>this.evaluate(expr.left)
+                : <HaggisArray>this.evaluate(expr.right);
+            }
           }
 
           return new HaggisArray(items);
