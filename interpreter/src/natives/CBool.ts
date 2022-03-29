@@ -16,7 +16,7 @@ class CBoolCallable extends HaggisCallable {
     super(Type.FUNCTION);
   }
 
-  call(interpreter: Interpreter, args: HaggisValue[]) {
+  async call(interpreter: Interpreter, args: HaggisValue[]) {
     const object = <HaggisBoolean | HaggisString | HaggisNumber | HaggisCharacter>args[0];
 
     let boolean: boolean;

@@ -18,7 +18,7 @@ export default class HaggisRecord extends HaggisValue implements HaggisCallable 
     this.fieldsArr = fields;
   }
 
-  call(interpreter: Interpreter, args: HaggisValue[]): HaggisRecordInstance {
+  async call(interpreter: Interpreter, args: HaggisValue[]): Promise<HaggisRecordInstance> {
     const fields: Map<string, HaggisValue> = new Map();
     this.fieldsArr.forEach(({ name }, i) => {
       fields.set(name.lexeme, args[i]);

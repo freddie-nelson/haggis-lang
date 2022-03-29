@@ -138,7 +138,7 @@ export default class Interpreter implements ExprVisitor<Promise<HaggisValue>>, S
       const set = new SetStmt(stmt.name.name, stmt.name, stmt.initializer);
       await this.execute(set);
     } else {
-      const value = (await this.evaluate(stmt.initializer)).copy();
+      const value = await this.evaluate(stmt.initializer);
       this.environment.define(stmt.name.lexeme, value);
     }
   }
@@ -189,9 +189,9 @@ export default class Interpreter implements ExprVisitor<Promise<HaggisValue>>, S
   }
 
   async visitForStmt(stmt: ForStmt) {
-    const lower = <HaggisNumber>(await this.evaluate(stmt.lower)).copy();
-    const upper = <HaggisNumber>(await this.evaluate(stmt.upper)).copy();
-    const step = <HaggisNumber>(await this.evaluate(stmt.step)).copy();
+    const lower = <HaggisNumber>await this.evaluate(stmt.lower);
+    const upper = <HaggisNumber>await this.evaluate(stmt.upper);
+    const step = <HaggisNumber>await this.evaluate(stmt.step);
 
     let counter: HaggisNumber;
     if (lower.type === Type.REAL || upper.type === Type.REAL || step.type === Type.REAL)
@@ -240,7 +240,7 @@ export default class Interpreter implements ExprVisitor<Promise<HaggisValue>>, S
   }
 
   async visitSetStmt(stmt: SetStmt) {
-    const value = (await this.evaluate(stmt.value)).copy();
+    const value = await this.evaluate(stmt.value);
     this.setObject(stmt.object, value);
   }
 
@@ -316,7 +316,7 @@ export default class Interpreter implements ExprVisitor<Promise<HaggisValue>>, S
   }
 
   async visitArrayExpr(expr: ArrayExpr) {
-    const items = await Promise.all(expr.items.map(async (item) => (await this.evaluate(item)).copy()));
+    const items = await Promise.all(expr.items.map((item) => this.evaluate(item)));
     return new HaggisArray(items);
   }
 
@@ -325,7 +325,7 @@ export default class Interpreter implements ExprVisitor<Promise<HaggisValue>>, S
 
     for (let i = 0; i < expr.fields.length; i++) {
       const f = expr.fields[i];
-      const value = (await this.evaluate(expr.values[i])).copy();
+      const value = await this.evaluate(expr.values[i]);
       fields.set(f.lexeme, value);
     }
 
@@ -341,7 +341,7 @@ export default class Interpreter implements ExprVisitor<Promise<HaggisValue>>, S
 
   async visitCallExpr(expr: CallExpr) {
     const func = <HaggisCallable>(<any>await this.evaluate(expr.callee));
-    const args = await Promise.all(expr.args.map(async (a) => (await this.evaluate(a)).copy()));
+    const args = await Promise.all(expr.args.map((a) => this.evaluate(a)));
 
     return await func.call(this, args);
   }
@@ -533,8 +533,9 @@ export default class Interpreter implements ExprVisitor<Promise<HaggisValue>>, S
     }
   }
 
-  evaluate(expression: Expr): Promise<HaggisValue> {
-    return expression.accept(this);
+  async evaluate(expression: Expr): Promise<HaggisValue> {
+    const val = await expression.accept(this);
+    return val.copy();
   }
 
   resolve(expr: Expr | TypeExpr, depth: number) {

@@ -15,7 +15,7 @@ class LengthCallable extends HaggisCallable {
     super(Type.FUNCTION);
   }
 
-  call(interpreter: Interpreter, args: HaggisValue[]) {
+  async call(interpreter: Interpreter, args: HaggisValue[]) {
     const object = <HaggisArray | HaggisString>args[0];
     return object.length();
   }

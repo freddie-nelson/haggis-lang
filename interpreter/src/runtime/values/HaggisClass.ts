@@ -39,11 +39,11 @@ export default class HaggisClass extends HaggisValue implements HaggisCallable {
     return this.methods.get(name) ?? this.superclass?.getMethod(name);
   }
 
-  call(interpreter: Interpreter, args: HaggisValue[]): HaggisClassInstance {
+  async call(interpreter: Interpreter, args: HaggisValue[]): Promise<HaggisClassInstance> {
     const instance = new HaggisClassInstance(this);
 
     if (this.initializer) {
-      this.initializer.bind(instance).call(interpreter, args);
+      await this.initializer.bind(instance).call(interpreter, args);
     } else {
       const chain = [];
       let curr = this.superclass;

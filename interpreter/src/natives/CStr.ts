@@ -14,7 +14,7 @@ class CStrCallable extends HaggisCallable {
     super(Type.FUNCTION);
   }
 
-  call(interpreter: Interpreter, args: HaggisValue[]) {
+  async call(interpreter: Interpreter, args: HaggisValue[]) {
     return args[0].toString();
   }
 

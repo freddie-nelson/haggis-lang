@@ -16,7 +16,7 @@ class CStrCallable extends HaggisCallable {
     super(Type.FUNCTION);
   }
 
-  call(interpreter: Interpreter, args: HaggisValue[]) {
+  async call(interpreter: Interpreter, args: HaggisValue[]) {
     const char = args[0].toString().jsString()[0];
 
     if (!char)
