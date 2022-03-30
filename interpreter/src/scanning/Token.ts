@@ -5,7 +5,7 @@ export default class Token {
   readonly lexeme: string;
   readonly literal: any;
   readonly line: number;
-  readonly column: number;
+  readonly index: number;
 
   /**
    * Creates an {@link Token} instance.
@@ -14,14 +14,14 @@ export default class Token {
    * @param lexeme The raw string of the token in the source code
    * @param literal The literal value of the token
    * @param line The line the token was on in the source code
-   * @param column The start column of the token in the source code
+   * @param index The index of the tokens starting character in the source string
    */
-  constructor(type: TokenType, lexeme: string, literal: any, line: number, column: number) {
+  constructor(type: TokenType, lexeme: string, literal: any, line: number, index: number) {
     this.type = type;
     this.lexeme = lexeme;
     this.literal = literal;
     this.line = line;
-    this.column = column;
+    this.index = index;
   }
 
   toString(): string {

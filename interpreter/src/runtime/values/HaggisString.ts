@@ -6,7 +6,7 @@ import HaggisArrayBase from "./HaggisArrayBase";
 
 export default class HaggisString extends HaggisArrayBase implements HaggisValue {
   readonly type: Type;
-  protected readonly items: HaggisCharacter[];
+  protected declare readonly items: HaggisCharacter[];
 
   constructor(value: string) {
     super(value.split("").map((c) => new HaggisCharacter(c)));

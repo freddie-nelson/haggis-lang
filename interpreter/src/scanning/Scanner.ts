@@ -4,7 +4,7 @@ import { TokenType } from "./TokenType";
 import keywords from "./keywords";
 
 export default class Scanner {
-  private readonly source: string;
+  source: string;
   private readonly tokens: Token[] = [];
 
   /** The start index of the current lexeme */
@@ -16,23 +16,23 @@ export default class Scanner {
   /** The line number we are on in the source */
   private line = 1;
 
-  private startColumn = 0;
-  private column = 0;
-
   constructor(source: string) {
     this.source = source;
   }
 
   scanTokens(): Token[] {
+    this.tokens.length = 0;
+    this.start = 0;
+    this.current = 0;
+    this.line = 1;
+
     while (!this.isAtEnd()) {
       // we are at the beginning of the next lexeme
       this.start = this.current;
-      this.startColumn = this.column;
       this.scanToken();
     }
 
     this.start = this.current;
-    this.startColumn = this.column;
     this.addToken(TokenType.EOF);
 
     return this.tokens;
@@ -99,7 +99,6 @@ export default class Scanner {
 
         if (c === "\n") {
           this.line++;
-          this.column = 0;
         }
         break;
 
@@ -144,7 +143,7 @@ export default class Scanner {
             token.lexeme,
             token.literal,
             token.line,
-            token.column
+            token.index
           );
 
           if (token.literal.length > 1) {
@@ -263,12 +262,11 @@ export default class Scanner {
   }
 
   private advance(): string {
-    this.column++;
     return this.source.charAt(this.current++);
   }
 
   private addToken(type: TokenType, literal?: any) {
     const text = this.source.substring(this.start, this.current);
-    this.tokens.push(new Token(type, text, literal, this.line, this.startColumn));
+    this.tokens.push(new Token(type, text, literal, this.line, this.start));
   }
 }

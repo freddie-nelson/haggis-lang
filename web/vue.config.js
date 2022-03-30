@@ -6,7 +6,7 @@ module.exports = defineConfig({
   configureWebpack: {
     resolve: {
       alias: {
-        "@interpreter": path.resolve(__dirname, "../interpreter"),
+        "@interpreter": path.resolve(__dirname, "../interpreter/src"),
       },
     },
   },
