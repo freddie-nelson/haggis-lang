@@ -1,5 +1,6 @@
 <template>
   <button
+    v-bind="$attrs"
     class="
       fixed
       bottom-5
@@ -69,6 +70,7 @@ import themeIcon from "@iconify-icons/feather/layout";
 
 export default defineComponent({
   name: "CThemeSelector",
+  inheritAttrs: false,
   components: {
     CModal,
     Icon,

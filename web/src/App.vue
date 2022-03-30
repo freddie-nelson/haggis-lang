@@ -14,7 +14,7 @@ export default defineComponent({
 
     onMounted(() => {
       const html = document.querySelector("html");
-      const theme = localStorage.getItem("theme") || themes[0];
+      const theme = "light";
       html?.classList.add(theme);
 
       store.setTheme(theme);
@@ -26,7 +26,7 @@ export default defineComponent({
 <template>
   <c-toast-controller />
 
-  <c-theme-selector />
+  <c-theme-selector class="hidden" />
 
   <router-view class="bg-bg-light w-full min-h-screen" />
 

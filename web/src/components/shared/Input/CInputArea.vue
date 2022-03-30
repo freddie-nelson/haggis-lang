@@ -4,7 +4,7 @@
       label
     }}</label>
 
-    <input
+    <textarea
       class="
         w-full
         block
@@ -52,7 +52,7 @@
 import { defineComponent } from "vue";
 
 export default defineComponent({
-  name: "CInputText",
+  name: "CInputArea",
   inheritAttrs: false,
   components: {},
   props: {
@@ -92,5 +92,4 @@ export default defineComponent({
 });
 </script>
 
-<style lang="scss" scoped>
-</style>
+<style lang="scss" scoped></style>

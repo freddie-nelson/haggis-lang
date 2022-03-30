@@ -12,6 +12,7 @@
     "@fontsource/roboto-mono": "^4.5.5",
     "@iconify-icons/feather": "^1.2.1",
     "@iconify/vue": "^3.2.0",
+    "@vueuse/core": "^8.2.0",
     "autoprefixer": "^10",
     "core-js": "^3.6.5",
     "pinia": "^2.0.12",
