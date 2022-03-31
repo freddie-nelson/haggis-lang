@@ -1,8 +1,10 @@
 <script lang="ts">
 import { defineComponent, nextTick, ref } from "vue";
 
-import CButtonText from "@/components/shared/Button/CButtonText.vue";
 import Haggis from "@interpreter/Haggis";
+import { escapeHTML } from "@/utils/escape";
+
+import CButtonText from "@/components/shared/Button/CButtonText.vue";
 
 export default defineComponent({
   name: "HEditorTerminal",
@@ -20,7 +22,7 @@ export default defineComponent({
     };
 
     Haggis.addLogListener((msg) => {
-      output.value += msg;
+      output.value += escapeHTML(msg);
     });
 
     Haggis.addErrorListener((token, msg) => {

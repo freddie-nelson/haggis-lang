@@ -215,6 +215,7 @@ export default defineComponent({
         >
           <!-- editor -->
           <textarea
+            id="playgroundCode"
             class="
               code-container
               overflow-scroll

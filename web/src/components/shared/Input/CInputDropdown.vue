@@ -7,7 +7,8 @@
         flex
         justify-between
         items-center
-        bg-t-sub
+        bg-input-light
+        text-t-main
         rounded-lg
         font-semibold
         text-lg
@@ -15,6 +16,7 @@
         py-3
         focus:outline-none
         w-full
+        h-full
       "
       type="button"
       @click="isOpen = !isOpen"
@@ -44,7 +46,8 @@
           dropdown
           absolute
           rounded-b-lg
-          bg-t-sub
+          bg-input-light
+          text-t-main
           w-full
           py-3
           pt-1
@@ -72,7 +75,7 @@
             focus:outline-none
             transition-colors
             duration-300
-            hover:text-accent-500
+            hover:text-primary-400
           "
           type="button"
           @click="

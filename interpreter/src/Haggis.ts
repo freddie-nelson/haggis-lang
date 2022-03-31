@@ -18,13 +18,22 @@ export default class Haggis {
   private static logListeners: ((message: string) => void)[] = [];
   static reader: WebReader;
 
+  static running = false;
   static hadError = false;
   static hadRuntimeError = false;
 
   static async run(source: string) {
+    if (this.running) return;
+
     this.hadError = false;
     this.hadRuntimeError = false;
+    this.running = true;
 
+    await this.runSource(source);
+    this.running = false;
+  }
+
+  private static async runSource(source: string) {
     source += "\n";
 
     const scanner = new Scanner(source);

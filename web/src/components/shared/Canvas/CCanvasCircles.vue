@@ -77,7 +77,7 @@ export default defineComponent({
       ctx.fillStyle = props.bgFill;
       ctx.fillRect(0, 0, canvas.value?.width, canvas.value?.height);
 
-      if (canvas.value) setTimeout(fadeOut, 41); // 24 times per second
+      if (canvas.value) setTimeout(fadeOut, 100); // 24 times per second
     };
 
     const resizeObserver = new ResizeObserver(() => {
