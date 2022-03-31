@@ -5,18 +5,23 @@ import {
   nextTick,
   onMounted,
   ref,
+  VueElement,
   watch,
   watchEffect,
 } from "vue";
 import { useResizeObserver, useScroll } from "@vueuse/core";
 
-import Scanner from "@interpreter/scanning/Scanner";
-import { TokenType } from "@interpreter/scanning/TokenType";
-import keywords from "@interpreter/scanning/keywords";
+import { Icon } from "@iconify/vue";
+import openIcon from "@iconify-icons/feather/chevron-left";
+
+import syntaxHighlighting from "./highlighting";
+import HEditorTerminal from "./HEditorTerminal.vue";
+import { useMouse } from "@/utils/useMouse";
+import useComponentEvent from "@/utils/useComponentEvent";
 
 export default defineComponent({
   name: "HHaggisEditor",
-  components: {},
+  components: { HEditorTerminal, Icon },
   setup() {
     const code = ref("");
     const highlightedCode = ref("");
@@ -25,50 +30,9 @@ export default defineComponent({
       return code.value.split("\n");
     });
 
-    const scanner = new Scanner("");
-
+    // live highlighting and analysis
     watch(code, (code) => {
-      highlightedCode.value = code;
-      scanner.source = code;
-
-      const tokens = scanner.scanTokens();
-
-      for (let i = tokens.length - 1; i >= 0; i--) {
-        const token = tokens[i];
-        const next = tokens[i + 1];
-        const tokenName = TokenType[token.type];
-
-        const before = code.slice(0, token.index);
-        const after = code.slice(token.index + token.lexeme.length);
-
-        let klass = "";
-        if (
-          keywords[token.lexeme] &&
-          token.lexeme.search(/MOD|DISPLAY|KEYBOARD|true|false/) === -1
-        ) {
-          klass = "text-primary-500";
-        } else if (tokenName.search(/LITERAL|TRUE|FALSE/) !== -1) {
-          klass = "text-pink-500";
-        } else if (tokenName.includes("LEFT") || tokenName.includes("RIGHT")) {
-          klass = "text-rose-700";
-        } else if (
-          tokenName.search(
-            /MINUS|PLUS|SLASH|STAR|CARET|MOD|AMPERSAND|EQUAL|LESS|GREATER|MOD/
-          ) !== -1
-        ) {
-          klass = "text-accent-500";
-        } else if (
-          (token.type === TokenType.IDENTIFIER &&
-            next?.type === TokenType.LEFT_PAREN) ||
-          tokenName.search(/DISPLAY|KEYBOARD/) !== -1
-        ) {
-          klass = "text-emerald-500";
-        }
-
-        code = `${before}<span class="${klass}">${token.lexeme}</span>${after}`;
-      }
-
-      highlightedCode.value = code;
+      highlightedCode.value = syntaxHighlighting(code);
     });
 
     const container = ref<HTMLDivElement>();
@@ -147,6 +111,41 @@ export default defineComponent({
       }
     };
 
+    const terminal = ref<InstanceType<typeof HEditorTerminal>>();
+
+    const editorWidth = ref(67);
+    const terminalWidth = ref(33);
+
+    const setEditorWidth = (width: number) => {
+      editorWidth.value = width;
+      terminalWidth.value = 100 - width;
+    };
+
+    const setTerminalWidth = (width: number) => {
+      terminalWidth.value = width;
+      editorWidth.value = 100 - width;
+    };
+
+    const { mouse } = useMouse(document.body);
+    const holdingSeparator = ref(false);
+
+    watchEffect(() => {
+      if (!holdingSeparator.value) return;
+
+      const editorRect = textarea.value.getBoundingClientRect();
+      const terminalRect = terminal.value.$el.getBoundingClientRect();
+      const x = mouse.x - editorRect.x;
+
+      let percentage = (x / (editorRect.width + terminalRect.width)) * 100;
+      percentage = Math.min(75, Math.max(0, 100 - percentage));
+
+      setTerminalWidth(percentage);
+    });
+
+    useComponentEvent(document.body, "mouseup", () => {
+      holdingSeparator.value = false;
+    });
+
     return {
       code,
       highlightedCode,
@@ -158,6 +157,18 @@ export default defineComponent({
       scroll,
 
       handleEditorKeyDown,
+
+      terminal,
+      editorWidth,
+      terminalWidth,
+      setEditorWidth,
+      setTerminalWidth,
+
+      holdingSeparator,
+
+      icons: {
+        open: openIcon,
+      },
     };
   },
 });
@@ -197,7 +208,10 @@ export default defineComponent({
           <div v-for="(l, i) in lines" :key="i" class="px-3">{{ i + 1 }}</div>
         </div>
 
-        <div class="relative flex-grow">
+        <div
+          class="relative flex-grow"
+          :style="{ maxWidth: `${editorWidth}%` }"
+        >
           <!-- editor -->
           <textarea
             class="
@@ -244,6 +258,56 @@ export default defineComponent({
             v-html="highlightedCode"
           ></pre>
         </div>
+
+        <!-- separator -->
+        <div
+          class="
+            absolute
+            top-0
+            h-full
+            w-1.5
+            cursor-col-resize
+            bg-b-dark
+            flex
+            items-center
+            transition-all
+            duration-300
+          "
+          :class="{ 'transition-none': holdingSeparator }"
+          :style="{ left: `${editorWidth}%` }"
+          @mousedown.self="holdingSeparator = true"
+        >
+          <button
+            class="
+              absolute
+              z-20
+              right-full
+              -mr-1
+              w-7
+              h-14
+              bg-b-dark
+              rounded-l-lg
+              text-bg-light
+              cursor-pointer
+            "
+            @click="
+              terminalWidth > 3 ? setTerminalWidth(0) : setTerminalWidth(33)
+            "
+          >
+            <Icon
+              class="w-full h-full transform transition-transform duration-300"
+              :class="{ 'rotate-180': terminalWidth > 3 }"
+              :icon="icons.open"
+            />
+          </button>
+        </div>
+
+        <h-editor-terminal
+          ref="terminal"
+          class="h-full w-full transition-all duration-300 ml-auto"
+          :class="{ 'transition-none': holdingSeparator }"
+          :style="{ maxWidth: `${terminalWidth}%` }"
+        />
       </div>
     </div>
   </div>

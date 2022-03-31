@@ -5,7 +5,8 @@ import runIcon from "@iconify-icons/feather/play";
 
 import CButtonIcon from "@/components/shared/Button/CButtonIcon.vue";
 import CGradientHeading from "@/components/shared/Heading/CGradientHeading.vue";
-import HHaggisEditor from "@/components/app/HHaggisEditor.vue";
+import HHaggisEditor from "@/components/app/Editor/HHaggisEditor.vue";
+import HEditorTerminal from "@/components/app/Editor/HEditorTerminal.vue";
 
 export default defineComponent({
   name: "Playground",

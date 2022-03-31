@@ -3,15 +3,17 @@ import Token from "./scanning/Token";
 import { TokenType } from "./scanning/TokenType";
 
 export default class Haggis {
+  private static errorListeners: ((token: Token, message: string) => void)[] = [];
+
   static hadError = false;
   static hadRuntimeError = false;
 
   static error(token: Token, message: string) {
-    if (token.type === TokenType.EOF) {
-      this.report(token.line, "at end", message);
-    } else {
-      this.report(token.line, `at '${token.lexeme.replace("\n", "\\n")}'`, message);
-    }
+    this.errorListeners.forEach((l) => l(token, message));
+  }
+
+  static addErrorListener(callback: (token: Token, message: string) => void) {
+    this.errorListeners.push(callback);
   }
 
   static runtimeError(error: RuntimeError) {
