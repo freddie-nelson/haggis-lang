@@ -2,6 +2,7 @@
 import {
   computed,
   defineComponent,
+  nextTick,
   onMounted,
   ref,
   watch,
@@ -20,6 +21,10 @@ export default defineComponent({
     const code = ref("");
     const highlightedCode = ref("");
 
+    const lines = computed(() => {
+      return code.value.split("\n");
+    });
+
     const scanner = new Scanner("");
 
     watch(code, (code) => {
@@ -33,8 +38,8 @@ export default defineComponent({
         const next = tokens[i + 1];
         const tokenName = TokenType[token.type];
 
-        const before = code.substring(0, token.index);
-        const after = code.substring(token.index + token.lexeme.length);
+        const before = code.slice(0, token.index);
+        const after = code.slice(token.index + token.lexeme.length);
 
         let klass = "";
         if (
@@ -66,17 +71,6 @@ export default defineComponent({
       highlightedCode.value = code;
     });
 
-    const lines = computed(() => {
-      const split = code.value.split("\n");
-      const nums: number[] = [];
-
-      for (let i = 1; i <= split.length; i++) {
-        nums.push(i);
-      }
-
-      return nums;
-    });
-
     const container = ref<HTMLDivElement>();
     const textarea = ref<HTMLTextAreaElement>();
     const highlighted = ref<HTMLPreElement>();
@@ -99,9 +93,57 @@ export default defineComponent({
     });
 
     const handleEditorKeyDown = (e: KeyboardEvent) => {
+      let cursor = textarea.value.selectionStart + 1;
+
       if (e.code === "Tab") {
+        code.value =
+          code.value.slice(0, textarea.value.selectionStart) +
+          "\t" +
+          code.value.slice(textarea.value.selectionStart);
+      } else if (e.code === "Enter") {
+        let tabs = 0;
+
+        // find line cursor is on
+        let line = 0;
+        let col = 0;
+
+        for (let i = 0; i <= textarea.value.selectionStart; i++) {
+          const char = code.value[i];
+          col++;
+
+          if (char === "\n") {
+            line++;
+            col = 0;
+          }
+        }
+
+        // count tabs on line before cursor
+        for (let i = 0; i < lines.value[line].length; i++) {
+          if (i === col - 1) break;
+
+          const char = lines.value[line][i];
+          if (char !== "\t") break;
+
+          tabs++;
+        }
+
+        cursor += tabs;
+
+        // add tabs to new line
+        code.value =
+          code.value.slice(0, textarea.value.selectionStart) +
+          "\n" +
+          "\t".repeat(tabs) +
+          code.value.slice(textarea.value.selectionStart);
+      }
+
+      if (e.code === "Tab" || e.code === "Enter") {
         e.preventDefault();
-        code.value += "\t";
+
+        nextTick(() => {
+          textarea.value.selectionStart = cursor;
+          textarea.value.selectionEnd = cursor;
+        });
       }
     };
 
@@ -152,7 +194,7 @@ export default defineComponent({
           "
           :style="{ marginTop: `-${scroll.y.value}px` }"
         >
-          <div v-for="i in lines" :key="i" class="px-3">{{ i }}</div>
+          <div v-for="(l, i) in lines" :key="i" class="px-3">{{ i + 1 }}</div>
         </div>
 
         <div class="relative flex-grow">
@@ -194,14 +236,13 @@ export default defineComponent({
               p-3
               w-full
               h-full
-              whitespace-nowrap
+              whitespace-pre
               overflow-scroll
               text-t-main
+              block
             "
-            aria-hidden="true"
-          >
-              <code class="whitespace-pre-wrap" v-html="highlightedCode"></code>
-            </pre>
+            v-html="highlightedCode"
+          ></pre>
         </div>
       </div>
     </div>
