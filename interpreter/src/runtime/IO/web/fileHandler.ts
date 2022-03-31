@@ -1,9 +1,6 @@
-import { close, closeSync, openSync, readFileSync, readSync, writeFileSync } from "fs";
-import { ReceiveStmt } from "../../../ast/Stmt";
 import Token from "../../../scanning/Token";
 import { TokenType } from "../../../scanning/TokenType";
 import RuntimeError from "../../RuntimeError";
-import HaggisString from "../../values/HaggisString";
 import { FileHandler } from "../IODevices";
 
 interface File {

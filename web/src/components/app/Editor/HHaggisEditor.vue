@@ -5,7 +5,6 @@ import {
   nextTick,
   onMounted,
   ref,
-  VueElement,
   watch,
   watchEffect,
 } from "vue";
@@ -22,7 +21,7 @@ import useComponentEvent from "@/utils/useComponentEvent";
 export default defineComponent({
   name: "HHaggisEditor",
   components: { HEditorTerminal, Icon },
-  setup() {
+  setup(props, { emit }) {
     const code = ref("");
     const highlightedCode = ref("");
 
@@ -32,6 +31,8 @@ export default defineComponent({
 
     // live highlighting and analysis
     watch(code, (code) => {
+      emit("code", code);
+
       highlightedCode.value = syntaxHighlighting(code);
     });
 
@@ -263,6 +264,7 @@ export default defineComponent({
         <div
           class="
             absolute
+            z-20
             top-0
             h-full
             w-1.5
@@ -280,7 +282,6 @@ export default defineComponent({
           <button
             class="
               absolute
-              z-20
               right-full
               -mr-1
               w-7
@@ -302,6 +303,7 @@ export default defineComponent({
           </button>
         </div>
 
+        <!-- terminal -->
         <h-editor-terminal
           ref="terminal"
           class="h-full w-full transition-all duration-300 ml-auto"

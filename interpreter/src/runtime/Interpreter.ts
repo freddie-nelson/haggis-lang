@@ -89,7 +89,7 @@ export default class Interpreter implements ExprVisitor<Promise<HaggisValue>>, S
       this.io.DISPLAY.send(new HaggisString(""), "DISPLAY");
       this.io.DISPLAY.send(
         new HaggisString(
-          `Finished executing in ${String((performance.now() - timer) / 1000).substr(0, 6)}s.`
+          `Finished executing in ${String((performance.now() - timer) / 1000).substr(0, 6)}s.\n`
         ),
         "DISPLAY"
       );
