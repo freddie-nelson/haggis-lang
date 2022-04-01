@@ -23,14 +23,19 @@ export default class Haggis {
   static hadRuntimeError = false;
 
   static async run(source: string) {
-    if (this.running) return;
-
     this.hadError = false;
     this.hadRuntimeError = false;
-    this.running = true;
 
-    await this.runSource(source);
-    this.running = false;
+    if (this.running) return;
+
+    try {
+      this.running = true;
+      await this.runSource(source);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      this.running = false;
+    }
   }
 
   private static async runSource(source: string) {
