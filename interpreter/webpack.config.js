@@ -1,3 +1,5 @@
+const path = require("path");
+
 module.exports = {
   entry: "./src/Haggis.ts",
   target: "node",
@@ -13,6 +15,9 @@ module.exports = {
   },
   resolve: {
     extensions: [".tsx", ".ts", ".js"],
+    alias: {
+      Haggis: path.resolve(__dirname, "src/Haggis.ts"),
+    },
   },
   output: {
     filename: "haggis.js",

@@ -1,7 +1,7 @@
 <script lang="ts">
 import { defineComponent, nextTick, ref } from "vue";
 
-import Haggis from "@interpreter/Haggis";
+import Haggis from "Haggis";
 import { escapeHTML } from "@/utils/escape";
 
 import CButtonText from "@/components/shared/Button/CButtonText.vue";

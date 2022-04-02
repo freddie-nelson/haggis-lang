@@ -38,7 +38,7 @@ import {
   ExpressionStmt,
 } from "../ast/Stmt";
 import { ArrayTypeExpr, IdentifierTypeExpr, Type, TypeExpr } from "../ast/TypeExpr";
-import Haggis from "../Haggis";
+import Haggis from "Haggis";
 import SyntaxError from "../scanning/SyntaxError";
 import Token from "../scanning/Token";
 import { TokenType } from "../scanning/TokenType";

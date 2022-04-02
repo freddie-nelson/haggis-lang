@@ -3,7 +3,7 @@ import { defineComponent, onMounted, ref, watch } from "vue";
 
 import runIcon from "@iconify-icons/feather/play";
 
-import Haggis from "@interpreter/Haggis";
+import Haggis from "Haggis";
 import examplesMap from "@/examples";
 
 import CButtonIcon from "@/components/shared/Button/CButtonIcon.vue";

@@ -39,7 +39,7 @@ import {
   ReturnStmt,
 } from "../ast/Stmt";
 import { TypeExpr, Type } from "../ast/TypeExpr";
-import Haggis from "../Haggis";
+import Haggis from "Haggis";
 import { NativeFunction } from "../natives/NativeFunction";
 import { NATIVE_FUNCTIONS } from "../natives/natives";
 import ImplementationError from "../parsing/ImplementationError";

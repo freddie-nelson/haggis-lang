@@ -1,4 +1,4 @@
-import Haggis from "../Haggis";
+import Haggis from "Haggis";
 import Token from "./Token";
 import { TokenType } from "./TokenType";
 import keywords from "./keywords";

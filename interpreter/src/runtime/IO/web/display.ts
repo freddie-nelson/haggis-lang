@@ -1,4 +1,4 @@
-import Haggis from "../../../Haggis";
+import Haggis from "Haggis";
 import HaggisValue from "../../values/HaggisValue";
 import { OutputDevice } from "../IODevices";
 

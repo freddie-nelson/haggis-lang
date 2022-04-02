@@ -39,7 +39,7 @@ import {
   SendStmt,
 } from "../ast/Stmt";
 import { IdentifierTypeExpr, Type, TypeExpr } from "../ast/TypeExpr";
-import Haggis from "../Haggis";
+import Haggis from "Haggis";
 import { NATIVE_FUNCTIONS } from "../natives/natives";
 import Interpreter from "../runtime/Interpreter";
 import Token from "../scanning/Token";

@@ -16,7 +16,8 @@
     "types": ["webpack-env"],
     "paths": {
       "@/*": ["src/*"],
-      "@interpreter/*": ["../interpreter/src/*"]
+      "@interpreter/*": ["../interpreter/src/*"],
+      "Haggis": ["../interpreter/src/HaggisWeb.ts"]
     },
     "lib": ["esnext", "dom", "dom.iterable", "scripthost"]
   },

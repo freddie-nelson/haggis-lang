@@ -6,6 +6,7 @@ module.exports = defineConfig({
   configureWebpack: {
     resolve: {
       alias: {
+        Haggis: path.resolve(__dirname, "../interpreter/src/HaggisWeb.ts"),
         "@interpreter": path.resolve(__dirname, "../interpreter/src"),
       },
     },
