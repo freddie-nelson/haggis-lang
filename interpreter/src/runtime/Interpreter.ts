@@ -38,8 +38,9 @@ import {
   CloseStmt,
   ReturnStmt,
 } from "../ast/Stmt";
-import { Type, TypeExpr } from "../ast/TypeExpr";
+import { TypeExpr, Type } from "../ast/TypeExpr";
 import Haggis from "../Haggis";
+import { NativeFunction } from "../natives/NativeFunction";
 import { NATIVE_FUNCTIONS } from "../natives/natives";
 import ImplementationError from "../parsing/ImplementationError";
 import Token from "../scanning/Token";
@@ -68,6 +69,8 @@ import HaggisVoid from "./values/HaggisVoid";
 export default class Interpreter implements ExprVisitor<Promise<HaggisValue>>, StmtVisitor<void> {
   readonly globals = new Environment();
   readonly locals: Map<Expr | TypeExpr, number> = new Map();
+
+  readonly casts: Map<Stmt, NativeFunction> = new Map();
 
   private environment = this.globals;
   private io: IODevices;
@@ -136,9 +139,17 @@ export default class Interpreter implements ExprVisitor<Promise<HaggisValue>>, S
   async visitVarStmt(stmt: VarStmt) {
     if (stmt.name instanceof GetExpr) {
       const set = new SetStmt(stmt.name.name, stmt.name, stmt.initializer);
+      if (this.casts.has(stmt)) {
+        this.casts.set(set, this.casts.get(stmt));
+      }
+
       await this.execute(set);
     } else {
-      const value = await this.evaluate(stmt.initializer);
+      let value = await this.evaluate(stmt.initializer);
+      if (this.casts.has(stmt)) {
+        value = await this.casts.get(stmt).func.call(this, [value]);
+      }
+
       this.environment.define(stmt.name.lexeme, value);
     }
   }
@@ -156,6 +167,10 @@ export default class Interpreter implements ExprVisitor<Promise<HaggisValue>>, S
       } else {
         const device = <InputDevice<HaggisValue>>this.io[stmt.sender.lexeme];
         value = await device.receive(stmt.sender.lexeme);
+      }
+
+      if (this.casts.has(stmt)) {
+        value = await this.casts.get(stmt).func.call(this, [value]);
       }
 
       this.environment.define(stmt.name.lexeme, value);
@@ -240,18 +255,33 @@ export default class Interpreter implements ExprVisitor<Promise<HaggisValue>>, S
   }
 
   async visitSetStmt(stmt: SetStmt) {
-    const value = await this.evaluate(stmt.value);
+    let value = await this.evaluate(stmt.value);
+
+    if (this.casts.has(stmt)) {
+      value = await this.casts.get(stmt).func.call(this, [value]);
+    }
+
     await this.setObject(stmt.object, value);
   }
 
   async visitReceiveStmt(stmt: ReceiveStmt) {
     if (stmt.sender instanceof Expr) {
       const sender = <HaggisString>await this.evaluate(stmt.sender);
-      const value = await this.io.fileHandler.receive(sender.jsString());
+      let value: HaggisValue = await this.io.fileHandler.receive(sender.jsString());
+
+      if (this.casts.has(stmt)) {
+        value = await this.casts.get(stmt).func.call(this, [value]);
+      }
+
       await this.setObject(stmt.object, value.copy());
     } else {
       const device = <InputDevice<HaggisValue>>this.io[stmt.sender.lexeme];
-      const value = await device.receive(stmt.sender.lexeme);
+      let value = await device.receive(stmt.sender.lexeme);
+
+      if (this.casts.has(stmt)) {
+        value = await this.casts.get(stmt).func.call(this, [value]);
+      }
+
       await this.setObject(stmt.object, value.copy());
     }
   }

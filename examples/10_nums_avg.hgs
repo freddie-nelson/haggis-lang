@@ -1,11 +1,10 @@
 DECLARE total INITIALLY 0
 DECLARE count INITIALLY 0
-DECLARE nextInput INITIALLY 0
+DECLARE nextInput INITIALLY 0.0
 
 WHILE count < 10 DO
   SEND "Enter number " & count + 1 & ":" TO DISPLAY
-  DECLARE input INITIALLY FROM KEYBOARD
-  SET nextInput TO CInt(input)
+  RECEIVE nextInput FROM KEYBOARD
 
   SET total TO total + nextInput
   SET count TO count + 1

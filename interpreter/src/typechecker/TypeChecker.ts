@@ -48,19 +48,22 @@ import {
   matchTypeExpr,
   RecordInstanceTypeExpr,
   RecordTypeExpr,
-  Type,
   TypeExpr,
+  Type,
 } from "../ast/TypeExpr";
 import Haggis from "../Haggis";
+import { NativeFunction } from "../natives/NativeFunction";
 import { NATIVE_FUNCTIONS } from "../natives/natives";
 import ImplementationError from "../parsing/ImplementationError";
 import Interpreter from "../runtime/Interpreter";
 import Token from "../scanning/Token";
 import { TokenType } from "../scanning/TokenType";
+import { canCast } from "./casting";
 import { InputEntities, OutputEntities } from "./SystemEntities";
 import TypeError from "./TypeError";
 
 export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<void> {
+  private readonly casts: Map<Stmt, NativeFunction>;
   private readonly locals: Map<Expr | TypeExpr, number>;
 
   private readonly global: Map<string, TypeExpr> = new Map();
@@ -72,6 +75,7 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
   private currentFunction: FunctionTypeExpr;
 
   constructor(interpreter: Interpreter) {
+    this.casts = interpreter.casts;
     this.locals = interpreter.locals;
 
     NATIVE_FUNCTIONS.forEach((f) => this.global.set(f.name, f.type));
@@ -250,8 +254,14 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
 
     const token = stmt.name instanceof GetExpr ? stmt.name.name : stmt.name;
 
-    if (!matchTypeExpr(type, initializer))
-      this.error(token, "Variable type and initializer type do not match.");
+    if (!matchTypeExpr(type, initializer)) {
+      const cast = canCast(initializer, type);
+      if (cast) {
+        this.cast(stmt, cast);
+      } else {
+        this.error(token, "Variable type and initializer type do not match.");
+      }
+    }
 
     if (type.type === Type.FUNCTION || type.type === Type.PROCEDURE)
       this.error(token, "Functions and procedures cannot be assigned to variables.");
@@ -343,8 +353,14 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
     )
       this.error(stmt.keyword, "Cannot assign to 'THIS'.");
 
-    if (!matchTypeExpr(object, value))
-      this.error(stmt.keyword, "Assignment target and value type do not match.");
+    if (!matchTypeExpr(object, value)) {
+      const cast = canCast(value, object);
+      if (cast) {
+        this.cast(stmt, cast);
+      } else {
+        this.error(stmt.keyword, "Assignment target and value type do not match.");
+      }
+    }
   }
 
   visitReceiveStmt(stmt: ReceiveStmt) {
@@ -363,12 +379,17 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
     if (stmt.sender instanceof Expr) {
       const sender = this.type(stmt.sender);
       if (!this.isString(sender)) this.error(stmt.keyword, "Sender expression must be a string.");
-      if (!this.isString(object)) this.error(stmt.keyword, "Receiving object must be a string.");
     } else {
       const entity = InputEntities[stmt.sender.lexeme];
       if (!entity) this.error(stmt.sender, `No input device by the name of '${stmt.sender.lexeme}' exists.`);
-      if (!matchTypeExpr(entity.type, object))
-        this.error(stmt.sender, "The sender's output type and the receiving object's type do not match.");
+      if (!matchTypeExpr(entity.type, object)) {
+        const cast = canCast(entity.type, object);
+        if (cast) {
+          this.cast(stmt, cast);
+        } else {
+          this.error(stmt.sender, "The sender's output type and the receiving object's type do not match.");
+        }
+      }
     }
   }
 
@@ -675,6 +696,10 @@ export default class TypeChecker implements ExprVisitor<TypeExpr>, StmtVisitor<v
 
     // Unreachable
     throw new ImplementationError(`Unresolved variable '${name.lexeme}' in type checker.`);
+  }
+
+  private cast(stmt: Stmt, cast: NativeFunction) {
+    this.casts.set(stmt, cast);
   }
 
   private isBoolean(type: TypeExpr): boolean {

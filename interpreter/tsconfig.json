@@ -7,6 +7,8 @@
     "rootDir": "src",
     "target": "es6",
     "moduleResolution": "node",
-    "strict": false
-  }
+    "strict": false,
+    "baseUrl": "."
+  },
+  "exclude": ["src/runtime/IO/web", "src/HaggisWeb.ts"]
 }

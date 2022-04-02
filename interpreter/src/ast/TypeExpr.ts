@@ -1,8 +1,13 @@
+import CBool from "../natives/CBool";
+import CChar from "../natives/CChar";
+import CInt from "../natives/CInt";
+import CReal from "../natives/CReal";
+import CStr from "../natives/CStr";
+import { NativeFunction } from "../natives/NativeFunction";
 import ImplementationError from "../parsing/ImplementationError";
 import Token from "../scanning/Token";
-import { Expr } from "./Expr";
 import Parameter from "./Parameter";
-import { ClassStmt, FunctionStmt, ProcedureStmt } from "./Stmt";
+import { ClassStmt, FunctionStmt } from "./Stmt";
 
 export enum Type {
   INTEGER,
