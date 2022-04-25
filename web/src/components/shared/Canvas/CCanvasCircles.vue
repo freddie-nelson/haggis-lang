@@ -20,7 +20,7 @@ export default defineComponent({
     },
     brushColor: {
       type: String,
-      default: "red",
+      default: "black",
     },
     brushSize: {
       type: Number,
@@ -81,8 +81,13 @@ export default defineComponent({
     };
 
     const resizeObserver = new ResizeObserver(() => {
+      const data = canvas.value.toDataURL();
       canvas.value.width = canvas.value.clientWidth;
       canvas.value.height = canvas.value.clientHeight;
+
+      const image = new Image(canvas.value.width, canvas.value.height);
+      image.src = data;
+      image.onload = () => ctx?.drawImage(image, 0, 0);
     });
 
     onMounted(() => {

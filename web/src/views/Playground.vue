@@ -68,7 +68,7 @@ export default defineComponent({
       </div>
     </div>
 
-    <h-haggis-editor @code="code = $event" />
+    <h-haggis-editor class="mt-3" @code="code = $event" />
   </main>
 </template>
 

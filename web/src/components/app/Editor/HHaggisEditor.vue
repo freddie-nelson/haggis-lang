@@ -105,7 +105,7 @@ export default defineComponent({
       if (e.code === "Tab" || e.code === "Enter") {
         e.preventDefault();
 
-        nextTick(() => {
+        requestAnimationFrame(() => {
           textarea.value.selectionStart = cursor;
           textarea.value.selectionEnd = cursor;
         });
@@ -147,6 +147,22 @@ export default defineComponent({
       holdingSeparator.value = false;
     });
 
+    const insertChar = (char: string) => {
+      const cursor = textarea.value.selectionStart + 1;
+
+      code.value =
+        code.value.substring(0, textarea.value.selectionStart) +
+        char +
+        code.value.substring(textarea.value.selectionStart);
+
+      textarea.value.focus();
+
+      requestAnimationFrame(() => {
+        textarea.value.selectionStart = cursor;
+        textarea.value.selectionEnd = cursor;
+      });
+    };
+
     return {
       code,
       highlightedCode,
@@ -167,6 +183,8 @@ export default defineComponent({
 
       holdingSeparator,
 
+      insertChar,
+
       icons: {
         open: openIcon,
       },
@@ -176,7 +194,64 @@ export default defineComponent({
 </script>
 
 <template>
-  <div class="flex flex-col mt-5 flex-grow">
+  <div class="flex flex-col flex-grow gap-3">
+    <div class="flex h-14">
+      <div
+        class="
+          flex
+          h-full
+          w-52
+          rounded-lg
+          bg-input-light
+          text-t-main
+          font-bold font-mono
+          text-lg
+          gap-4
+          p-2
+        "
+      >
+        <button
+          class="
+            h-full
+            flex-grow
+            hover:bg-input-blur-dark
+            rounded-md
+            transition-colors
+            duration-300
+          "
+          @click="insertChar('≠')"
+        >
+          ≠
+        </button>
+        <button
+          class="
+            h-full
+            flex-grow
+            hover:bg-input-blur-dark
+            rounded-md
+            transition-colors
+            duration-300
+          "
+          @click="insertChar('≤')"
+        >
+          ≤
+        </button>
+        <button
+          class="
+            h-full
+            flex-grow
+            hover:bg-input-blur-dark
+            rounded-md
+            transition-colors
+            duration-300
+          "
+          @click="insertChar('≥')"
+        >
+          ≥
+        </button>
+      </div>
+    </div>
+
     <div class="flex-grow relative overflow-hidden">
       <div
         class="
@@ -204,7 +279,7 @@ export default defineComponent({
             flex flex-col
             items-center
           "
-          :style="{ marginTop: `-${scroll.y.value}px` }"
+          :style="{ marginTop: `${-scroll.y.value}px` }"
         >
           <div v-for="(l, i) in lines" :key="i" class="px-3">{{ i + 1 }}</div>
         </div>
